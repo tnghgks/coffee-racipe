@@ -312,6 +312,28 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      explore_recipe_ids: {
+        Args: {
+          after_id?: string;
+          after_key?: number;
+          at?: string;
+          dripper_slug?: string;
+          page_size?: number;
+          query?: string;
+          ratio_max?: number;
+          ratio_min?: number;
+          sort?: string;
+          time_max?: number;
+        };
+        Returns: {
+          id: string;
+          sort_key: number;
+        }[];
+      };
+      recipe_hot_score: {
+        Args: { at: string; created_at: string; like_count: number; save_count: number };
+        Returns: number;
+      };
       save_recipe: { Args: { recipe: Json; recipe_id?: string; steps: Json }; Returns: string };
     };
     Enums: {

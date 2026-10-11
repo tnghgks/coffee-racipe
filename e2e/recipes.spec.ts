@@ -6,18 +6,18 @@ const BASIC_V60 = "/recipes/00000000-0000-4000-8000-000000000003"; // 15g, 1:16,
 test("filters official recipes by dripper", async ({ page }) => {
   await page.goto("/recipes");
   const cards = page.getByTestId("recipe-list").getByRole("listitem");
-  await expect(cards).toHaveCount(12);
+  await expect(cards).toHaveCount(22);
 
   await page.getByRole("navigation", { name: "드리퍼 필터" }).getByRole("link", { name: "Chemex" }).click();
   await expect(page).toHaveURL(/\/recipes\?dripper=chemex$/);
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(3);
   for (const card of await cards.all()) {
     await expect(card).toContainText("Chemex");
   }
 
   await page.getByRole("navigation", { name: "정렬" }).getByRole("link", { name: "인기순" }).click();
   await expect(page).toHaveURL(/dripper=chemex&sort=popular$/);
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(3);
 });
 
 test("rescales every step when the dose changes from 15g to 20g", async ({ page }) => {

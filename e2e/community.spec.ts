@@ -31,7 +31,7 @@ test("a public recipe shows its author and appears on the author's profile", asy
   await anonymous.goto(url);
   await expect(anonymous.getByRole("heading", { level: 1 })).toHaveText("공개 V60");
   await anonymous.goto("/recipes");
-  await expect(anonymous.getByTestId("recipe-list").getByRole("listitem")).toHaveCount(12);
+  await expect(anonymous.getByTestId("recipe-list").getByRole("listitem")).toHaveCount(22);
   await expect(anonymous.getByTestId("recipe-list")).not.toContainText("공개 V60");
   await anonymous.close();
 });
