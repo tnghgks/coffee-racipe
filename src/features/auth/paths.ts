@@ -1,8 +1,12 @@
 /** Routes that require a signed-in user; the proxy redirects to /login otherwise. */
-export const PROTECTED_PREFIXES = ["/me"] as const;
+export const PROTECTED_PREFIXES = ["/me", "/recipes/new"] as const;
+const PROTECTED_PATTERNS = [/^\/recipes\/[^/]+\/edit\/?$/];
 
 export function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  return (
+    PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
+    PROTECTED_PATTERNS.some((pattern) => pattern.test(pathname))
+  );
 }
 
 /**

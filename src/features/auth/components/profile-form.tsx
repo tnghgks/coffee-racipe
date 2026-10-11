@@ -1,9 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
+import { FormField, inputClass } from "@/components/common/form-field";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -17,12 +18,12 @@ type ProfileFormProps = {
   submitLabel: string;
 };
 
-const input =
-  "h-11 w-full rounded-lg border bg-background px-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive";
-
 export function ProfileForm({ defaultValues, next, submitLabel }: ProfileFormProps) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  // Unique per instance: Next keeps visited pages mounted (hidden), so fixed ids would collide.
+  const uid = useId();
+  const fid = (name: string) => `${uid}-${name}`;
   const {
     register,
     handleSubmit,
@@ -44,34 +45,45 @@ export function ProfileForm({ defaultValues, next, submitLabel }: ProfileFormPro
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
-      <Field label="사용자 이름" htmlFor="username" error={errors.username?.message} hint="프로필 주소에 쓰여요. 영문 소문자·숫자·밑줄 3~20자">
+      <FormField
+        label="사용자 이름"
+        htmlFor={fid("username")}
+        error={errors.username?.message}
+        hint="프로필 주소에 쓰여요. 영문 소문자·숫자·밑줄 3~20자"
+      >
         <div className="flex items-center rounded-lg border bg-background focus-within:ring-2 focus-within:ring-ring">
           <span className="pl-3 text-muted-foreground">@</span>
           <input
-            id="username"
+            id={fid("username")}
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}
             aria-invalid={!!errors.username}
-            className={cn(input, "border-0 pl-1 focus-visible:ring-0")}
+            className={cn(inputClass, "border-0 pl-1 focus-visible:ring-0")}
             {...register("username")}
           />
         </div>
-      </Field>
+      </FormField>
 
-      <Field label="표시 이름" htmlFor="displayName" error={errors.displayName?.message}>
-        <input id="displayName" autoComplete="nickname" aria-invalid={!!errors.displayName} className={input} {...register("displayName")} />
-      </Field>
+      <FormField label="표시 이름" htmlFor={fid("displayName")} error={errors.displayName?.message}>
+        <input
+          id={fid("displayName")}
+          autoComplete="nickname"
+          aria-invalid={!!errors.displayName}
+          className={inputClass}
+          {...register("displayName")}
+        />
+      </FormField>
 
-      <Field label="소개" htmlFor="bio" error={errors.bio?.message} hint="선택 · 300자 이내">
+      <FormField label="소개" htmlFor={fid("bio")} error={errors.bio?.message} hint="선택 · 300자 이내">
         <textarea
-          id="bio"
+          id={fid("bio")}
           rows={3}
           aria-invalid={!!errors.bio}
-          className={cn(input, "h-auto py-2")}
+          className={cn(inputClass, "h-auto py-2")}
           {...register("bio")}
         />
-      </Field>
+      </FormField>
 
       {message && (
         <p role="status" className="text-sm text-muted-foreground">
@@ -83,35 +95,5 @@ export function ProfileForm({ defaultValues, next, submitLabel }: ProfileFormPro
         {pending ? "저장 중…" : submitLabel}
       </Button>
     </form>
-  );
-}
-
-function Field({
-  label,
-  htmlFor,
-  error,
-  hint,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  error?: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-sm font-medium">
-        {label}
-      </label>
-      {children}
-      {error ? (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
-      ) : (
-        hint && <p className="text-xs text-muted-foreground">{hint}</p>
-      )}
-    </div>
   );
 }

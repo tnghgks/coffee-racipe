@@ -7,7 +7,7 @@ import { siteConfig } from "@/config/site";
 import { DevLoginForm } from "@/features/auth/components/dev-login-form";
 import { OAuthButtons } from "@/features/auth/components/oauth-buttons";
 import { safeNextPath } from "@/features/auth/paths";
-import { afterLoginPath, getCurrentUser } from "@/features/auth/queries";
+import { afterLoginPath, getMyProfile } from "@/features/auth/queries";
 
 export const metadata: Metadata = { title: "로그인", robots: { index: false } };
 
@@ -32,8 +32,9 @@ async function LoginOptions({ searchParams }: Pick<PageProps<"/login">, "searchP
   const query = await searchParams;
   const next = safeNextPath(typeof query.next === "string" ? query.next : null);
 
-  // Already signed in: skip the login screen.
-  if (await getCurrentUser()) redirect(await afterLoginPath(next));
+  // Already signed in: skip the login screen. Checks the profile row, not just the token: a token for a
+  // deleted account is still validly signed until it expires, and must not bounce back and forth.
+  if (await getMyProfile()) redirect(await afterLoginPath(next));
 
   return (
     <div className="flex flex-col gap-4">

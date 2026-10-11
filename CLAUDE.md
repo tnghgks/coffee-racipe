@@ -28,6 +28,7 @@ Zod, React Hook Form, Zustand, TanStack Query, Vitest, Playwright, pnpm
 | zustand | 5.0.15 (Phase 2) |
 | zod | 4.6.5 (Phase 3) |
 | react-hook-form / @hookform/resolvers | 7.89.0 / 5.9.1 (Phase 3) |
+| @dnd-kit/core · sortable · utilities | 6.3.1 · 10.0.0 · 3.2.2 (Phase 3, 단계 드래그 정렬) |
 
 TanStack Query, Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
 
@@ -110,6 +111,18 @@ e2e/                Playwright 테스트
 - 로그인 후 이동은 항상 `safeNextPath`로 거른다 (외부 URL 차단). next가 없으면 홈으로.
 - `"use server"` 파일의 export는 전부 클라이언트에서 호출 가능한 엔드포인트가 된다. 액션이 아닌 헬퍼는 `queries.ts` 같은 server-only 파일에 둔다.
 - Next 라우트 안내(route announcer)도 role="alert"라서 E2E에서 `getByRole("alert")`는 2개가 잡힌다. 메시지는 텍스트로 찾는다.
+
+### 레시피 에디터 (Phase 3-B에서 정함)
+- 저장은 DB 함수 `save_recipe(recipe, steps, recipe_id?)` 하나로 (레시피 + 단계를 한 트랜잭션). `security invoker`라 RLS·컬럼 GRANT가 그대로 적용되고, 남의 레시피 수정은 행이 안 보여 P0002로 실패한다. 단계 순서(시간·물량 역행 금지)도 함수 안에서 한 번 더 막는다.
+- 에디터 스키마는 `features/recipe/editor-schema.ts` 하나를 폼과 Server Action이 같이 쓴다. 입력은 누적 g·m:ss, 저장은 `water_ratio`·초. 마지막 단계 = 원두 × 비율 ± 2g.
+- 공개 데이터 읽기는 `queries.ts`(캐시), 내 레시피·비공개 읽기는 `my-queries.ts`(세션, 캐시 없음). 둘이 쓰는 컬럼·매핑은 `mappers.ts`. 상세·추출 페이지는 `getRecipeForViewer`(공개 → 없으면 내 비공개).
+- 복제는 `/recipes/new?fork=<id>`로 미리 채우고 저장할 때 `forked_from`을 남긴다. 상세에 "원본" 링크.
+- 편집/새 레시피는 proxy가 보호한다 (`/recipes/new`, `/recipes/*/edit`). 남의 레시피 편집 URL은 404.
+- **Next 16은 지나온 페이지를 숨긴 채(display:none) DOM에 남겨 둔다** (뒤로가기 상태 보존). 그래서 폼 `id`는 고정 문자열 금지 → `useId()`로 만든다 (안 그러면 `<label for>`가 숨은 페이지의 input을 가리킨다). E2E에서 `getByText`·`getByTestId` 배열은 숨은 페이지까지 잡으니 `getByRole("article")` 등으로 범위를 좁히거나 `.filter({ visible: true })`.
+- dnd-kit `DndContext`에는 `id={useId()}`를 준다 (안 그러면 hydration mismatch).
+- 토큰은 유효한데 profiles 행이 없으면(삭제된 계정) 비로그인으로 취급한다. 로그인 페이지·헤더는 `getMyProfile()`로 판단 (`getCurrentUser()`만 보면 /login ↔ /me 무한 리다이렉트).
+- E2E는 `e2e/fixtures.ts`의 `test`를 쓴다. 브라우저 콘솔 에러·uncaught 예외가 있으면 테스트가 실패한다 (dev 전용 경고를 놓치지 않게). 로그인 헬퍼는 `e2e/helpers.ts`.
+- pgTAP에서 전체 행 수를 세지 않는다. 로컬 DB에는 E2E가 만든 데이터가 섞여 있다 → 픽스처 id로 범위를 좁힌다.
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.

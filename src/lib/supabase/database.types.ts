@@ -224,7 +224,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      save_recipe: { Args: { recipe: Json; recipe_id?: string; steps: Json }; Returns: string };
     };
     Enums: {
       recipe_visibility: "private" | "unlisted" | "public";

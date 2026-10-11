@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Avatar } from "@/components/common/avatar";
 
-import { getCurrentUser, getMyProfile } from "../queries";
+import { getMyProfile } from "../queries";
 
 export function LoginLink() {
   return (
@@ -17,13 +17,14 @@ export function LoginLink() {
 
 /** Header slot: avatar linking to /me when signed in, otherwise a login link. Render inside <Suspense>. */
 export async function UserButton() {
-  if (!(await getCurrentUser())) return <LoginLink />;
+  // No profile row = not signed in (also covers a still-valid token for a deleted account).
   const profile = await getMyProfile();
-  const name = profile?.displayName ?? profile?.username ?? "나";
+  if (!profile) return <LoginLink />;
+  const name = profile.displayName ?? profile.username ?? "나";
 
   return (
     <Link href="/me" aria-label="내 정보" className="rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-      <Avatar src={profile?.avatarUrl ?? null} name={name} size={32} />
+      <Avatar src={profile.avatarUrl} name={name} size={32} />
     </Link>
   );
 }

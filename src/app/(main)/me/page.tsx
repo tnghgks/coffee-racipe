@@ -10,7 +10,7 @@ import { requireProfile } from "@/features/auth/queries";
 export const metadata: Metadata = { title: "내 정보", robots: { index: false } };
 
 const links = [
-  { href: "/me/recipes", label: "내 레시피", icon: BookOpen, soon: "Phase 3-B" },
+  { href: "/me/recipes", label: "내 레시피", icon: BookOpen, soon: null },
   { href: "/me/logs", label: "브루 로그", icon: NotebookPen, soon: "Phase 4" },
 ];
 
@@ -44,7 +44,7 @@ export default async function MePage() {
             <Link href={href} className="flex min-h-14 items-center gap-3 px-4 hover:bg-accent/40">
               <Icon className="size-5 text-primary" aria-hidden />
               <span className="flex-1 font-medium">{label}</span>
-              <span className="text-xs text-muted-foreground">{soon}</span>
+              {soon && <span className="text-xs text-muted-foreground">{soon}</span>}
               <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
             </Link>
           </li>

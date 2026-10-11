@@ -40,7 +40,12 @@ select results_eq(
 set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
 
-select is((select count(*)::int from public.profiles), 3, 'anon can read profiles');
+-- Count only this test's fixtures: the local DB may also hold users created by E2E runs.
+select is(
+  (select count(*)::int from public.profiles where id in (
+    '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222', '33333333-3333-4333-8333-333333333333')),
+  3, 'anon can read profiles'
+);
 
 select throws_ok(
   $$ update public.profiles set display_name = 'hacked' $$,

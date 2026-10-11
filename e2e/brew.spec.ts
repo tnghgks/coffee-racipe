@@ -1,4 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+
+import { expect, test } from "./fixtures";
 
 // Seed: "V60 기본 1인분" — 15g, 1:16, steps at 0:00 / 0:40 / 1:10 / 1:40 (2/8/12/16 × dose), ends 2:45.
 const RECIPE = "/recipes/00000000-0000-4000-8000-000000000003";

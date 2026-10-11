@@ -8,6 +8,11 @@ describe("isProtectedPath", () => {
     ["/me/setup", true],
     ["/me/logs", true],
     ["/meow", false],
+    ["/recipes/new", true],
+    ["/recipes/abc/edit", true],
+    ["/recipes/abc", false],
+    ["/recipes/abc/brew", false],
+    ["/recipes/newest", false],
     ["/recipes", false],
     ["/", false],
   ])("%s → %s", (path, expected) => {

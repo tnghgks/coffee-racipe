@@ -1,21 +1,7 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "./fixtures";
+import { completeSetup, devLogin, unique } from "./helpers";
 
 // Uses the dev email login (NEXT_PUBLIC_DEV_LOGIN=1 + local Supabase email auth); OAuth needs real provider keys.
-
-const unique = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-
-async function devLogin(page: Page, email: string, password = "password123") {
-  const form = page.locator("form", { hasText: "개발용 로그인" });
-  await form.getByLabel("이메일").fill(email);
-  await form.getByLabel("비밀번호").fill(password);
-  await form.getByRole("button", { name: "이메일로 로그인" }).click();
-}
-
-async function completeSetup(page: Page, username: string, displayName = "드립 테스터") {
-  await page.getByLabel("사용자 이름").fill(username);
-  await page.getByLabel("표시 이름").fill(displayName);
-  await page.getByRole("button", { name: "시작하기" }).click();
-}
 
 test("signing in for the first time goes through profile setup and back to the original page", async ({ page }) => {
   const id = unique();
