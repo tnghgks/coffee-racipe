@@ -60,7 +60,8 @@ export function RecipeCalculator({ doseG, ratio, steps }: RecipeCalculatorProps)
               aria-live="polite"
               data-testid="total-water"
             >
-              <span className="text-3xl text-primary">{scaled.totalWaterG}</span>
+              {/* Reserve 4 digits (up to 100g × 1:20) so the row doesn't shift. */}
+              <span className="min-w-[4ch] text-right text-3xl text-primary">{scaled.totalWaterG}</span>
               <span className="text-base font-normal text-muted-foreground">g</span>
             </span>
           </div>

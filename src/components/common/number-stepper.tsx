@@ -25,6 +25,17 @@ type NumberStepperProps = {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const roundToStep = (value: number, step: number) => Math.round(value / step) * step;
 const display = (value: number) => String(Number(value.toFixed(3)));
+const decimalsOf = (value: number) => display(value).split(".")[1]?.length ?? 0;
+
+/**
+ * Character width of the widest value the −/+ buttons can produce (e.g. max 100, step 0.5 → "100.5"),
+ * or the starting value if that is wider (e.g. 16.667). Keeps the control from resizing as decimals appear.
+ */
+export function stepperSlotChars(min: number, max: number, step: number, initial: number): number {
+  const stepDecimals = decimalsOf(step);
+  const integerDigits = Math.max(String(Math.trunc(Math.abs(max))).length, String(Math.trunc(Math.abs(min))).length);
+  return Math.max(integerDigits + (stepDecimals > 0 ? stepDecimals + 1 : 0), display(initial).length);
+}
 
 const sizes = {
   md: { button: "size-11", text: "text-2xl", affix: "text-base" },
@@ -45,6 +56,8 @@ export function NumberStepper({
   className,
 }: NumberStepperProps) {
   const [draft, setDraft] = useState<string | null>(null);
+  // Fixed at mount so stepping never changes the control's width.
+  const [slotChars] = useState(() => stepperSlotChars(min, max, step, value));
   const text = draft ?? display(value);
   const s = sizes[size];
 
@@ -73,9 +86,12 @@ export function NumberStepper({
           aria-label={label}
           inputMode="decimal"
           autoComplete="off"
-          className="min-w-0 bg-transparent text-center outline-none"
-          // Size to the text so prefix/suffix hug the number ("1:16.667", "30g").
-          style={{ width: `${Math.max(2, text.length) + 0.25}ch` }}
+          // Hug the unit: "20.5g" right-aligned before a suffix, "1:16" left-aligned after a prefix.
+          className={cn(
+            "min-w-0 bg-transparent outline-none",
+            suffix ? "text-right" : prefix ? "text-left" : "text-center",
+          )}
+          style={{ width: `${slotChars + 0.25}ch` }}
           value={text}
           onFocus={(e) => e.currentTarget.select()}
           onChange={(e) => {

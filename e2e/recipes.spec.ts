@@ -49,6 +49,22 @@ test("changing the ratio stretches the steps", async ({ page }) => {
   await expect(page.getByTestId("step-cumulative").last()).toHaveText("225g");
 });
 
+test("stepping into decimals does not shift the layout", async ({ page }) => {
+  await page.goto(BASIC_V60);
+  const doseUp = page.getByRole("button", { name: "원두량 0.5 늘리기" });
+  const ratioUp = page.getByRole("button", { name: "비율 0.5 늘리기" });
+  const arrowRow = page.getByTestId("total-water");
+
+  const before = await Promise.all([doseUp.boundingBox(), ratioUp.boundingBox(), arrowRow.boundingBox()]);
+  await doseUp.click(); // 15 → 15.5
+  await ratioUp.click(); // 16 → 16.5
+  await expect(page.getByRole("textbox", { name: "원두량" })).toHaveValue("15.5");
+  await expect(page.getByRole("textbox", { name: "비율" })).toHaveValue("16.5");
+  const after = await Promise.all([doseUp.boundingBox(), ratioUp.boundingBox(), arrowRow.boundingBox()]);
+
+  expect(after).toEqual(before);
+});
+
 test("unknown recipe shows not found", async ({ page }) => {
   await page.goto("/recipes/00000000-0000-4000-8000-0000000000ff");
   await expect(page.getByRole("heading", { name: "페이지를 찾을 수 없어요" })).toBeVisible();
