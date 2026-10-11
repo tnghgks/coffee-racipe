@@ -34,5 +34,6 @@ export type RecipeDetail = RecipeSummary & {
   grindText: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
+  sourceNote: string | null;
   steps: RecipeStep[];
 };

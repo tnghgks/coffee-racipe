@@ -126,6 +126,16 @@ test("stepping into decimals does not shift the layout", async ({ page }) => {
   expect(after).toEqual(before);
 });
 
+test("credits the original author when there is one", async ({ page }) => {
+  await page.goto("/recipes/00000000-0000-4000-8000-000000000002"); // 4:6
+  const credit = page.getByRole("complementary", { name: "원작자" });
+  await expect(credit).toContainText("Tetsu Kasuya");
+  await expect(credit).toContainText("월드 브루어스 컵 챔피언");
+
+  await page.goto(BASIC_V60); // in-house recipe
+  await expect(page.getByRole("complementary", { name: "원작자" })).toHaveCount(0);
+});
+
 test("unknown recipe shows not found", async ({ page }) => {
   await page.goto("/recipes/00000000-0000-4000-8000-0000000000ff");
   await expect(page.getByRole("heading", { name: "페이지를 찾을 수 없어요" })).toBeVisible();

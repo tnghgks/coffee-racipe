@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(23);
+select plan(24);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: two users, each with a private / unlisted / public recipe
@@ -151,6 +151,12 @@ select isnt_empty(
 select lives_ok(
   $$ update public.recipes set title = 'alice private v2' where id = 'aaaaaaaa-0000-4000-8000-000000000001' $$,
   'author can update own recipe'
+);
+
+select lives_ok(
+  $$ update public.recipes set source_name = 'Someone', source_note = '원작자 소개'
+     where id = 'aaaaaaaa-0000-4000-8000-000000000001' $$,
+  'author can credit a source'
 );
 
 select throws_ok(

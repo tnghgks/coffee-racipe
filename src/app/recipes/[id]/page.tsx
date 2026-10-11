@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { OfficialBadge } from "@/features/recipe/components/official-badge";
 import { RecipeCalculator } from "@/features/recipe/components/recipe-calculator";
+import { SourceCredit } from "@/features/recipe/components/source-credit";
 import { dripperLabel } from "@/features/recipe/dripper";
 import { getRecipe } from "@/features/recipe/queries";
 import { formatGrams, formatRatio, formatSeconds } from "@/lib/brew";
@@ -50,21 +51,13 @@ export default async function RecipePage({ params }: PageProps<"/recipes/[id]">)
             {recipe.isOfficial && <OfficialBadge />}
           </div>
           <h1 className="text-2xl leading-tight font-bold tracking-tight text-balance">{recipe.title}</h1>
-          {recipe.sourceName && (
-            <p className="text-sm text-muted-foreground">
-              원작{" "}
-              {recipe.sourceUrl ? (
-                <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                  {recipe.sourceName}
-                </a>
-              ) : (
-                recipe.sourceName
-              )}
-            </p>
-          )}
         </div>
 
         {recipe.description && <p className="text-muted-foreground">{recipe.description}</p>}
+
+        {recipe.sourceName && (
+          <SourceCredit name={recipe.sourceName} url={recipe.sourceUrl} note={recipe.sourceNote} />
+        )}
 
         <ul className="flex flex-wrap gap-2" aria-label="추출 조건">
           {specs.map(({ icon: Icon, label, value }) => (

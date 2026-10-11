@@ -109,6 +109,7 @@ export type Database = {
           save_count: number;
           search: unknown;
           source_name: string | null;
+          source_note: string | null;
           source_url: string | null;
           title: string;
           total_time_s: number;
@@ -132,6 +133,7 @@ export type Database = {
           save_count?: number;
           search?: never;
           source_name?: string | null;
+          source_note?: string | null;
           source_url?: string | null;
           title: string;
           total_time_s: number;
@@ -154,6 +156,7 @@ export type Database = {
           save_count?: number;
           search?: never;
           source_name?: string | null;
+          source_note?: string | null;
           source_url?: string | null;
           title?: string;
           total_time_s?: number;

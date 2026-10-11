@@ -135,3 +135,12 @@ from (values
   ('00000000-0000-4000-8000-000000000012', 1, '젓기', 30, 16.000, '표면의 가루가 가라앉도록 가볍게 젓고 뚜껑을 덮습니다.'),
   ('00000000-0000-4000-8000-000000000012', 2, '내리기', 120, 16.000, '서버 위에 올려 추출액을 내립니다.')
 ) as s(recipe_id, position, label, start_at_s, water_ratio, note);
+
+-- Credits for well-known recipes (our own wording).
+update public.recipes set source_note =
+  '2007 월드 바리스타 챔피언. 런던의 로스터리 Square Mile Coffee를 공동 창업했고, 유튜브로 홈 브루잉을 널리 알렸어요.'
+where id = '00000000-0000-4000-8000-000000000001';
+
+update public.recipes set source_note =
+  '2016 월드 브루어스 컵 챔피언. 이 대회에서 4:6 메소드를 선보였고, 일본 후나바시에서 Philocoffea를 운영해요.'
+where id = '00000000-0000-4000-8000-000000000002';

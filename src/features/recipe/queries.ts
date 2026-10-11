@@ -110,7 +110,7 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
   const { data, error } = await createPublicClient()
     .from("recipes")
     .select(
-      `${summaryColumns}, grind_text, source_name, source_url,
+      `${summaryColumns}, grind_text, source_name, source_url, source_note,
        drippers!inner(slug, name, brand, size_label, max_dose_g),
        recipe_steps(position, label, start_at_s, water_ratio, note)`,
     )
@@ -126,6 +126,7 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
     grindText: data.grind_text,
     sourceName: data.source_name,
     sourceUrl: data.source_url,
+    sourceNote: data.source_note,
     steps: data.recipe_steps.map(
       (step): RecipeStep => ({
         position: step.position,
