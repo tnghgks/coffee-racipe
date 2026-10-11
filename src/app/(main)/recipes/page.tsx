@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { RecipeCard } from "@/features/recipe/components/recipe-card";
 import { RecipeFilters } from "@/features/recipe/components/recipe-filters";
-import { getDrippers, listPublicRecipes } from "@/features/recipe/queries";
+import { getDrippers, listOfficialRecipes } from "@/features/recipe/queries";
 import { parseRecipeListParams } from "@/features/recipe/search-params";
 
 export const metadata: Metadata = {
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function RecipesPage({ searchParams }: PageProps<"/recipes">) {
   const params = parseRecipeListParams(await searchParams);
-  const [drippers, recipes] = await Promise.all([getDrippers(), listPublicRecipes(params)]);
+  const [drippers, recipes] = await Promise.all([getDrippers(), listOfficialRecipes(params)]);
   const dripperName = drippers.find((d) => d.slug === params.dripper)?.name;
 
   return (
@@ -20,7 +20,7 @@ export default async function RecipesPage({ searchParams }: PageProps<"/recipes"
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight">레시피</h1>
         <p className="text-sm text-muted-foreground">
-          {dripperName ? `${dripperName} 레시피 ${recipes.length}개` : `레시피 ${recipes.length}개`}
+          {dripperName ? `${dripperName} 공식 레시피 ${recipes.length}개` : `공식 레시피 ${recipes.length}개`}
         </p>
       </header>
 

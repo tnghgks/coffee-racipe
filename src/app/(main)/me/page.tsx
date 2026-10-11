@@ -24,9 +24,9 @@ export default async function MePage() {
         <Avatar src={profile.avatarUrl} name={name} size={64} />
         <div className="flex min-w-0 flex-1 flex-col">
           <h1 className="truncate text-xl font-bold">{name}</h1>
-          <p className="text-sm text-muted-foreground" data-testid="my-username">
+          <Link href={`/u/${profile.username}`} className="w-fit text-sm text-muted-foreground hover:underline" data-testid="my-username">
             @{profile.username}
-          </p>
+          </Link>
         </div>
         <Link
           href="/me/setup"

@@ -132,6 +132,12 @@ e2e/                Playwright 테스트
 - 레시피 상세: 지난 "다음엔" 메모는 계산기 위(`LastAdjustmentNote`), 내 기록 3개는 맨 아래(`MyRecipeLogs`). 둘 다 세션을 읽어서 각각 Suspense.
 - 로그인·로그아웃·프로필 저장 액션은 `revalidatePath("/", "layout")`를 부른다. 레이아웃(헤더 아바타)은 이동해도 유지되므로 안 하면 새로고침 전까지 옛 상태가 보인다.
 
+### 커뮤니티 (Phase 5에서 정함)
+- 5-A: `/recipes`는 **공식 레시피만** (`listOfficialRecipes`). 사용자 공개 레시피는 `/u/[username]`과 `/explore`(5-B)에 나온다.
+- 공개 범위: private(나만) · unlisted(링크로만, 목록·프로필에 안 나옴, 상세는 noindex) · public. 편집은 기존 값을 유지하고 복제는 private으로 시작.
+- 레시피 조회는 작성자(`profiles` embed)를 함께 가져온다 (`mappers.ts`의 `author`). 카드 안에서는 링크 중첩을 피하려고 `AuthorLabel`, 그 밖에서는 `AuthorLink`.
+- 공개 프로필·작성자 정보가 들어간 캐시는 `recipeTags.profiles` 태그를 단다. 프로필 저장 시 `updateTag(recipeTags.profiles)`.
+
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.
 - CI(`.github/workflows/ci.yml`): Lint · Typecheck · Test 통과 후 E2E. Supabase 없이 돈다.

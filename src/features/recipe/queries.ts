@@ -15,6 +15,8 @@ export const recipeTags = {
   all: "recipes",
   detail: (id: string) => `recipe:${id}`,
   drippers: "drippers",
+  /** Public profile data (also embedded in recipe lists as the author). */
+  profiles: "profiles",
 } as const;
 
 export type DripperOption = Dripper & { id: string };
@@ -29,12 +31,18 @@ export async function getDrippers(): Promise<DripperOption[]> {
   return data.map((row) => ({ id: row.id, ...toDripper(row) }));
 }
 
-export async function listPublicRecipes({ dripper, sort }: RecipeListParams): Promise<RecipeSummary[]> {
+/** Official recipes for /recipes. Community recipes live on author profiles and /explore. */
+export async function listOfficialRecipes({ dripper, sort }: RecipeListParams): Promise<RecipeSummary[]> {
   "use cache";
   cacheLife("minutes");
   cacheTag(recipeTags.all);
 
-  let query = createPublicClient().from("recipes").select(summaryColumns).eq("visibility", "public").limit(100);
+  let query = createPublicClient()
+    .from("recipes")
+    .select(summaryColumns)
+    .eq("is_official", true)
+    .eq("visibility", "public")
+    .limit(100);
 
   if (dripper) query = query.eq("drippers.slug", dripper);
 
@@ -54,7 +62,7 @@ export async function listPublicRecipes({ dripper, sort }: RecipeListParams): Pr
 export async function getRecipe(id: string): Promise<RecipeDetail | null> {
   "use cache";
   cacheLife("minutes");
-  cacheTag(recipeTags.all, recipeTags.detail(id));
+  cacheTag(recipeTags.all, recipeTags.detail(id), recipeTags.profiles);
 
   if (!isUuid(id)) return null;
 

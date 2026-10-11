@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { AuthorLabel } from "@/features/community/components/author-link";
+
 import { formatGrams, formatRatio, formatSeconds, roundGrams } from "@/lib/brew";
 
 import { dripperLabel } from "../dripper";
@@ -30,6 +32,11 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         원두 {formatGrams(recipe.doseG)} · {formatRatio(recipe.ratio)} · 물 {roundGrams(recipe.doseG * recipe.ratio)}g ·{" "}
         {formatSeconds(recipe.totalTimeS)}
       </p>
+      {recipe.author && (
+        <p className="text-xs text-muted-foreground">
+          <AuthorLabel author={recipe.author} />
+        </p>
+      )}
     </Link>
   );
 }

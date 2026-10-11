@@ -74,6 +74,7 @@ describe("conversion", () => {
     waterTempC: 100,
     grindText: "중간 가늘게",
     totalTimeS: 210,
+    visibility: "public" as const,
     steps: [
       { position: 0, label: "뜸", startAtS: 0, waterRatio: 2, note: null },
       { position: 1, label: "1차", startAtS: 45, waterRatio: 10, note: "30초 안에" },
@@ -91,6 +92,11 @@ describe("conversion", () => {
       ["1:15", 500],
     ]);
     expect(form.forkedFrom).toBe("00000000-0000-4000-8000-000000000001");
+  });
+
+  it("keeps visibility when editing, starts forks as private", () => {
+    expect(recipeToForm(stored, { keepVisibility: true }).visibility).toBe("public");
+    expect(recipeToForm(stored, { forkedFrom: "00000000-0000-4000-8000-000000000001" }).visibility).toBe("private");
   });
 
   it("round-trips: stored → form → payload scales back to the same grams", () => {

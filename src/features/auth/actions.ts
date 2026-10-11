@@ -1,9 +1,10 @@
 "use server";
 
-import { refresh, revalidatePath } from "next/cache";
+import { refresh, revalidatePath, updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { recipeTags } from "@/features/recipe/queries";
 import { createClient } from "@/lib/supabase/server";
 
 import { safeNextPath } from "./paths";
@@ -98,6 +99,8 @@ export async function saveProfile(values: ProfileInput, next: string | null): Pr
   if (error) return { error: "저장하지 못했어요. 잠시 후 다시 시도해 주세요." };
 
   revalidateSession();
+  // Names and avatars are embedded in cached public recipe lists and profile pages.
+  updateTag(recipeTags.profiles);
   if (next !== null) redirect(safeNextPath(next, "/me"));
   refresh();
   return { ok: true };

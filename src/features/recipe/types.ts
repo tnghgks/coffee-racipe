@@ -10,6 +10,12 @@ export type Dripper = {
 
 export type RecipeVisibility = "private" | "unlisted" | "public";
 
+export type RecipeAuthor = {
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+};
+
 export type RecipeSummary = {
   id: string;
   /** null for official recipes. */
@@ -25,6 +31,8 @@ export type RecipeSummary = {
   likeCount: number;
   createdAt: string;
   dripper: Dripper;
+  /** null for official recipes. */
+  author: RecipeAuthor | null;
 };
 
 export type RecipeStep = {
