@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { parseBrewSettings } from "@/features/brew/settings";
+import { AuthorLink } from "@/features/community/components/author-link";
 import { LastAdjustmentNote, MyRecipeLogs } from "@/features/log/components/recipe-log-sections";
 import { OfficialBadge } from "@/features/recipe/components/official-badge";
 import { ForkLink, ForkOrigin, RecipeActions } from "@/features/recipe/components/recipe-actions";
@@ -24,6 +25,8 @@ export async function generateMetadata({ params }: PageProps<"/recipes/[id]">): 
   return {
     title: recipe.title,
     description: recipe.description ? `${summary} — ${recipe.description}` : summary,
+    // Unlisted/private recipes are reachable by link only; keep them out of search engines.
+    robots: recipe.visibility === "public" ? undefined : { index: false, follow: false },
   };
 }
 
@@ -56,6 +59,7 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
             {recipe.isOfficial ? <OfficialBadge /> : <VisibilityBadge visibility={recipe.visibility} />}
           </div>
           <h1 className="text-2xl leading-tight font-bold tracking-tight text-balance">{recipe.title}</h1>
+          {recipe.author && <AuthorLink author={recipe.author} size="md" className="w-fit text-sm" />}
         </div>
 
         {recipe.forkedFrom && (

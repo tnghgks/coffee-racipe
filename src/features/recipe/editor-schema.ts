@@ -49,7 +49,7 @@ export const recipeFormSchema = z
     ]),
     grindText: z.string().trim().max(100, "100자 이내"),
     totalTime: clock("m:ss 형식으로 입력해 주세요 (예: 2:45)"),
-    visibility: z.literal("private"), // unlisted/public open in Phase 5
+    visibility: z.enum(["private", "unlisted", "public"]),
     forkedFrom: z.uuid().nullable(),
     steps: z.array(stepSchema).min(1, "단계를 하나 이상 추가해 주세요").max(MAX_STEPS, `단계는 ${MAX_STEPS}개까지`),
   })
@@ -106,9 +106,19 @@ export function emptyRecipeForm(): RecipeFormInput {
 export function recipeToForm(
   recipe: Pick<
     RecipeDetail,
-    "title" | "description" | "dripper" | "doseG" | "ratio" | "waterTempC" | "grindText" | "totalTimeS" | "steps"
+    | "title"
+    | "description"
+    | "dripper"
+    | "doseG"
+    | "ratio"
+    | "waterTempC"
+    | "grindText"
+    | "totalTimeS"
+    | "steps"
+    | "visibility"
   >,
-  options: { forkedFrom?: string | null; titleSuffix?: string } = {},
+  /** keepVisibility: editing keeps the current setting; forks start private. */
+  options: { forkedFrom?: string | null; titleSuffix?: string; keepVisibility?: boolean } = {},
 ): RecipeFormInput {
   return {
     title: `${recipe.title}${options.titleSuffix ?? ""}`.slice(0, 100),
@@ -119,7 +129,7 @@ export function recipeToForm(
     waterTempC: recipe.waterTempC ?? Number.NaN,
     grindText: recipe.grindText ?? "",
     totalTime: formatSeconds(recipe.totalTimeS),
-    visibility: "private",
+    visibility: options.keepVisibility ? recipe.visibility : "private",
     forkedFrom: options.forkedFrom ?? null,
     steps: recipe.steps.map((step) => ({
       label: step.label,

@@ -1,11 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Lock, Wand2 } from "lucide-react";
+import { Wand2 } from "lucide-react";
 import Link from "next/link";
 import { useId, useState, useTransition } from "react";
 import { FormProvider, useForm, useWatch, type FieldPath } from "react-hook-form";
 
+import { HydrationFieldset } from "@/components/common/hydration-guard";
 import { FormField, inputClass } from "@/components/common/form-field";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { roundGrams } from "@/lib/brew";
@@ -28,9 +29,9 @@ type RecipeEditorProps = {
 };
 
 const visibilityOptions = [
-  { value: "private", label: "나만 보기", enabled: true },
-  { value: "unlisted", label: "링크 공개", enabled: false },
-  { value: "public", label: "전체 공개", enabled: false },
+  { value: "private", label: "나만 보기", hint: "나만 볼 수 있어요" },
+  { value: "unlisted", label: "링크 공개", hint: "링크를 아는 사람만" },
+  { value: "public", label: "전체 공개", hint: "프로필·탐색에 보여요" },
 ] as const;
 
 export function RecipeEditor({ drippers, defaultValues, recipeId, cancelHref }: RecipeEditorProps) {
@@ -79,6 +80,7 @@ export function RecipeEditor({ drippers, defaultValues, recipeId, cancelHref }: 
   return (
     <FormProvider {...form}>
       <form onSubmit={onSubmit} noValidate className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        <HydrationFieldset>
         <div className="flex min-w-0 flex-col gap-8">
           {/* basics */}
           <section className="flex flex-col gap-4" aria-labelledby="basics-heading">
@@ -219,18 +221,13 @@ export function RecipeEditor({ drippers, defaultValues, recipeId, cancelHref }: 
               {visibilityOptions.map((option) => (
                 <label
                   key={option.value}
-                  className={cn(
-                    "flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm",
-                    option.enabled ? "cursor-pointer has-checked:border-primary" : "cursor-not-allowed opacity-50",
-                  )}
+                  className="flex min-h-14 cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-accent/50"
                 >
-                  <input type="radio" value={option.value} disabled={!option.enabled} {...register("visibility")} />
-                  {option.label}
-                  {!option.enabled && (
-                    <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
-                      <Lock className="size-3" aria-hidden />곧 열려요
-                    </span>
-                  )}
+                  <input type="radio" value={option.value} className="accent-primary" {...register("visibility")} />
+                  <span className="flex flex-col">
+                    <span className="font-medium">{option.label}</span>
+                    <span className="text-xs text-muted-foreground">{option.hint}</span>
+                  </span>
                 </label>
               ))}
             </div>
@@ -255,6 +252,7 @@ export function RecipeEditor({ drippers, defaultValues, recipeId, cancelHref }: 
         <aside className="lg:sticky lg:top-20">
           <EditorPreview />
         </aside>
+        </HydrationFieldset>
       </form>
     </FormProvider>
   );

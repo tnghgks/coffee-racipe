@@ -29,8 +29,9 @@ Zod, React Hook Form, Zustand, TanStack Query, Vitest, Playwright, pnpm
 | zod | 4.6.5 (Phase 3) |
 | react-hook-form / @hookform/resolvers | 7.89.0 / 5.9.1 (Phase 3) |
 | @dnd-kit/core · sortable · utilities | 6.3.1 · 10.0.0 · 3.2.2 (Phase 3, 단계 드래그 정렬) |
+| @tanstack/react-query | 5.104.1 (Phase 5, 탐색 무한 스크롤) |
 
-TanStack Query, Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
+Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
 
 ## 구조
 src/app/            루트 layout은 html/body/폰트만. 라우트는 그룹으로 나눈다 (URL에는 안 나옴)
@@ -120,6 +121,7 @@ e2e/                Playwright 테스트
 - 편집/새 레시피는 proxy가 보호한다 (`/recipes/new`, `/recipes/*/edit`). 남의 레시피 편집 URL은 404.
 - **Next 16은 지나온 페이지를 숨긴 채(display:none) DOM에 남겨 둔다** (뒤로가기 상태 보존). 그래서 폼 `id`는 고정 문자열 금지 → `useId()`로 만든다 (안 그러면 `<label for>`가 숨은 페이지의 input을 가리킨다). E2E에서 `getByText`·`getByTestId` 배열은 숨은 페이지까지 잡으니 `getByRole("article")` 등으로 범위를 좁히거나 `.filter({ visible: true })`.
 - dnd-kit `DndContext`에는 `id={useId()}`를 준다 (안 그러면 hydration mismatch).
+- onSubmit으로 처리하는 클라이언트 폼(react-hook-form)은 내용을 `HydrationFieldset`으로 감싼다. 하이드레이션 전에는 입력이 비활성화된다. 안 그러면 SSR된 input에 먼저 친 내용이 RHF 기본값 등록 때 덮여 섞이고("기존값+새값" 저장), 이른 제출은 네이티브 GET으로 값이 URL에 남는다. Server Action을 `action`으로 쓰는 폼은 JS 없이도 동작하므로 필요 없다.
 - 토큰은 유효한데 profiles 행이 없으면(삭제된 계정) 비로그인으로 취급한다. 로그인 페이지·헤더는 `getMyProfile()`로 판단 (`getCurrentUser()`만 보면 /login ↔ /me 무한 리다이렉트).
 - E2E는 `e2e/fixtures.ts`의 `test`를 쓴다. 브라우저 콘솔 에러·uncaught 예외가 있으면 테스트가 실패한다 (dev 전용 경고를 놓치지 않게). 로그인 헬퍼는 `e2e/helpers.ts`.
 - pgTAP에서 전체 행 수를 세지 않는다. 로컬 DB에는 E2E가 만든 데이터가 섞여 있다 → 픽스처 id로 범위를 좁힌다.
@@ -131,6 +133,19 @@ e2e/                Playwright 테스트
 - 날짜는 `formatBrewedAt`으로 Asia/Seoul 고정 포맷 (서버 UTC와 브라우저가 같게).
 - 레시피 상세: 지난 "다음엔" 메모는 계산기 위(`LastAdjustmentNote`), 내 기록 3개는 맨 아래(`MyRecipeLogs`). 둘 다 세션을 읽어서 각각 Suspense.
 - 로그인·로그아웃·프로필 저장 액션은 `revalidatePath("/", "layout")`를 부른다. 레이아웃(헤더 아바타)은 이동해도 유지되므로 안 하면 새로고침 전까지 옛 상태가 보인다.
+
+### 커뮤니티 (Phase 5에서 정함)
+- 5-A: `/recipes`는 **공식 레시피만** (`listOfficialRecipes`). 사용자 공개 레시피는 `/u/[username]`과 `/explore`(5-B)에 나온다.
+- 공개 범위: private(나만) · unlisted(링크로만, 목록·프로필에 안 나옴, 상세는 noindex) · public. 편집은 기존 값을 유지하고 복제는 private으로 시작.
+- 레시피 조회는 작성자(`profiles` embed)를 함께 가져온다 (`mappers.ts`의 `author`). 카드 안에서는 링크 중첩을 피하려고 `AuthorLabel`, 그 밖에서는 `AuthorLink`.
+- 공개 프로필·작성자 정보가 들어간 캐시는 `recipeTags.profiles` 태그를 단다. 프로필 저장 시 `updateTag(recipeTags.profiles)`.
+- 5-B 탐색: `/explore` = 공개 레시피 전체(공식 포함). DB 함수 `explore_recipe_ids`가 검색·필터·정렬·키셋 페이지네이션을 하고, 상세 컬럼은 `summaryColumns`로 따로 가져온다.
+- 검색은 `websearch_to_tsquery('simple')`(사용자 입력에 절대 에러 안 남) OR 제목 ILIKE(한글 부분 일치, `%`·`_` 이스케이프). "4:6"도 동작.
+- 인기 점수 `recipe_hot_score` = (좋아요 + 2×저장 + 1) / (경과시간h + 2)^1.5. 계산 기준 시각 `at`은 10분 단위로 내림(첫 페이지 캐시 공유)하고 커서에 실어 같은 피드의 모든 페이지가 같은 순위를 쓴다.
+- **커서의 정렬 키는 정수(bigint)**: 점수 × 1e9, 최신은 epoch 마이크로초. float 키는 JSON 왕복 중 반올림돼 경계 행이 다음 페이지에 또 나왔다.
+- 첫 페이지는 서버 렌더링, 다음 페이지는 `/api/explore`(GET) + TanStack Query `useInfiniteQuery` + IntersectionObserver("더 보기" 버튼 fallback). 검색창은 GET form이라 JS 없이도 동작.
+- 시각을 읽는 코드(`Date.now()`)가 렌더 경로에 있으면 먼저 `await connection()`. 안 하면 Cache Components 프리렌더 검증이 콘솔 에러를 낸다 (E2E 콘솔 가드가 잡는다).
+- 공식 레시피 시드 22개 (PLAN 리스크 대응 "20개 이상"). E2E에서 공식 레시피 수를 셀 때 22.
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.

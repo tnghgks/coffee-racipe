@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useId, useState, useTransition } from "react";
 import { Controller, useForm, type FieldPath } from "react-hook-form";
 
+import { HydrationFieldset } from "@/components/common/hydration-guard";
 import { FormField, inputClass } from "@/components/common/form-field";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,7 @@ export function LogForm({ defaultValues, logId, recipe, cancelHref }: LogFormPro
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-8">
+      <HydrationFieldset>
       {recipe && (
         <p className="text-sm text-muted-foreground">
           레시피{" "}
@@ -211,6 +213,7 @@ export function LogForm({ defaultValues, logId, recipe, cancelHref }: LogFormPro
           {pending ? "저장 중…" : "기록 저장"}
         </Button>
       </div>
+      </HydrationFieldset>
     </form>
   );
 }

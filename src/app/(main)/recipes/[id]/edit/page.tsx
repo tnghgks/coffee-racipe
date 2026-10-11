@@ -23,7 +23,7 @@ export default async function EditRecipePage({ params }: PageProps<"/recipes/[id
       <h1 className="text-2xl font-bold tracking-tight">레시피 수정</h1>
       <RecipeEditor
         drippers={drippers}
-        defaultValues={recipeToForm(recipe, { forkedFrom: recipe.forkedFrom })}
+        defaultValues={recipeToForm(recipe, { forkedFrom: recipe.forkedFrom, keepVisibility: true })}
         recipeId={recipe.id}
         cancelHref={`/recipes/${recipe.id}`}
       />

@@ -12,8 +12,11 @@ export const isUuid = (value: string) => UUID_RE.test(value);
 export const dripperColumns = "id, slug, name, brand, size_label, max_dose_g";
 type DripperRow = Pick<Tables<"drippers">, "slug" | "name" | "brand" | "size_label" | "max_dose_g">;
 
+const authorColumns = "username, display_name, avatar_url";
+type AuthorRow = Pick<Tables<"profiles">, "username" | "display_name" | "avatar_url">;
+
 export const summaryColumns = `id, author_id, visibility, title, description, dose_g, ratio, water_temp_c, total_time_s,
-  is_official, like_count, created_at, drippers!inner(${dripperColumns})`;
+  is_official, like_count, created_at, drippers!inner(${dripperColumns}), profiles(${authorColumns})`;
 type SummaryRow = Pick<
   Tables<"recipes">,
   | "id"
@@ -28,7 +31,7 @@ type SummaryRow = Pick<
   | "is_official"
   | "like_count"
   | "created_at"
-> & { drippers: DripperRow };
+> & { drippers: DripperRow; profiles: AuthorRow | null };
 
 export const detailColumns = `${summaryColumns}, grind_text, source_name, source_url, source_note, forked_from,
   recipe_steps(position, label, start_at_s, water_ratio, note)`;
@@ -62,6 +65,14 @@ export function toSummary(row: SummaryRow): RecipeSummary {
     likeCount: row.like_count,
     createdAt: row.created_at,
     dripper: toDripper(row.drippers),
+    // Official recipes have no author; authors without a username can't publish, but guard anyway.
+    author: row.profiles?.username
+      ? {
+          username: row.profiles.username,
+          displayName: row.profiles.display_name,
+          avatarUrl: row.profiles.avatar_url,
+        }
+      : null,
   };
 }
 
