@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useId, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
+import { HydrationFieldset } from "@/components/common/hydration-guard";
 import { FormField, inputClass } from "@/components/common/form-field";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ export function ProfileForm({ defaultValues, next, submitLabel }: ProfileFormPro
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
+      <HydrationFieldset>
       <FormField
         label="사용자 이름"
         htmlFor={fid("username")}
@@ -94,6 +96,7 @@ export function ProfileForm({ defaultValues, next, submitLabel }: ProfileFormPro
       <Button type="submit" size="lg" className="h-12" disabled={pending}>
         {pending ? "저장 중…" : submitLabel}
       </Button>
+      </HydrationFieldset>
     </form>
   );
 }

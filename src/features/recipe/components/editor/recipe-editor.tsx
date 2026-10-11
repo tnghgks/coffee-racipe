@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useId, useState, useTransition } from "react";
 import { FormProvider, useForm, useWatch, type FieldPath } from "react-hook-form";
 
+import { HydrationFieldset } from "@/components/common/hydration-guard";
 import { FormField, inputClass } from "@/components/common/form-field";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { roundGrams } from "@/lib/brew";
@@ -79,6 +80,7 @@ export function RecipeEditor({ drippers, defaultValues, recipeId, cancelHref }: 
   return (
     <FormProvider {...form}>
       <form onSubmit={onSubmit} noValidate className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        <HydrationFieldset>
         <div className="flex min-w-0 flex-col gap-8">
           {/* basics */}
           <section className="flex flex-col gap-4" aria-labelledby="basics-heading">
@@ -250,6 +252,7 @@ export function RecipeEditor({ drippers, defaultValues, recipeId, cancelHref }: 
         <aside className="lg:sticky lg:top-20">
           <EditorPreview />
         </aside>
+        </HydrationFieldset>
       </form>
     </FormProvider>
   );

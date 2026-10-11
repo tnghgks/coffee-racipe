@@ -120,6 +120,7 @@ e2e/                Playwright 테스트
 - 편집/새 레시피는 proxy가 보호한다 (`/recipes/new`, `/recipes/*/edit`). 남의 레시피 편집 URL은 404.
 - **Next 16은 지나온 페이지를 숨긴 채(display:none) DOM에 남겨 둔다** (뒤로가기 상태 보존). 그래서 폼 `id`는 고정 문자열 금지 → `useId()`로 만든다 (안 그러면 `<label for>`가 숨은 페이지의 input을 가리킨다). E2E에서 `getByText`·`getByTestId` 배열은 숨은 페이지까지 잡으니 `getByRole("article")` 등으로 범위를 좁히거나 `.filter({ visible: true })`.
 - dnd-kit `DndContext`에는 `id={useId()}`를 준다 (안 그러면 hydration mismatch).
+- onSubmit으로 처리하는 클라이언트 폼(react-hook-form)은 내용을 `HydrationFieldset`으로 감싼다. 하이드레이션 전에는 입력이 비활성화된다. 안 그러면 SSR된 input에 먼저 친 내용이 RHF 기본값 등록 때 덮여 섞이고("기존값+새값" 저장), 이른 제출은 네이티브 GET으로 값이 URL에 남는다. Server Action을 `action`으로 쓰는 폼은 JS 없이도 동작하므로 필요 없다.
 - 토큰은 유효한데 profiles 행이 없으면(삭제된 계정) 비로그인으로 취급한다. 로그인 페이지·헤더는 `getMyProfile()`로 판단 (`getCurrentUser()`만 보면 /login ↔ /me 무한 리다이렉트).
 - E2E는 `e2e/fixtures.ts`의 `test`를 쓴다. 브라우저 콘솔 에러·uncaught 예외가 있으면 테스트가 실패한다 (dev 전용 경고를 놓치지 않게). 로그인 헬퍼는 `e2e/helpers.ts`.
 - pgTAP에서 전체 행 수를 세지 않는다. 로컬 DB에는 E2E가 만든 데이터가 섞여 있다 → 픽스처 id로 범위를 좁힌다.
