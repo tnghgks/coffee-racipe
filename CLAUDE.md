@@ -26,8 +26,10 @@ Zod, React Hook Form, Zustand, TanStack Query, Vitest, Playwright, pnpm
 | eslint | 9.39.5 |
 | oxfmt | 0.72.0 (생성 타입 포맷용) |
 | zustand | 5.0.15 (Phase 2) |
+| zod | 4.6.5 (Phase 3) |
+| react-hook-form / @hookform/resolvers | 7.89.0 / 5.9.1 (Phase 3) |
 
-Zod, React Hook Form, TanStack Query, Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
+TanStack Query, Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
 
 ## 구조
 src/app/            루트 layout은 html/body/폰트만. 라우트는 그룹으로 나눈다 (URL에는 안 나옴)
@@ -98,6 +100,16 @@ e2e/                Playwright 테스트
 - Web Audio는 시작/재개 탭 안에서 `unlock()`해야 iOS에서 소리가 난다. iOS Safari는 진동 미지원이라 소리만.
 - E2E는 `page.clock`으로 시간을 돌린다. 긴 시간은 `fastForward` 후 짧은 `runFor`로 (프레임을 하나하나 돌리면 느리다).
 - 개발 서버의 Next dev indicator는 꺼 두었다 (`devIndicators: false`). 화면 모서리 버튼을 가려 E2E 클릭을 막았다.
+
+### 인증 (Phase 3-A에서 정함)
+- 로그인: Google·Kakao OAuth (`signInWithOAuth` → `/auth/callback`에서 code 교환). 로컬은 `supabase/config.toml`의 `[auth.external.*]`를 켜고 키는 `supabase/.env`(gitignore)에 둔다.
+- 개발용 이메일 로그인: `NEXT_PUBLIC_DEV_LOGIN=1`일 때만 /login에 보인다 (로컬 .env.local, CI). Vercel에는 절대 넣지 않고, 클라우드 Supabase는 이메일 로그인을 꺼 둔다. E2E는 이 로그인을 쓴다.
+- `profiles`: 가입 트리거가 만들고(OAuth 이름·사진 채움) `username`은 첫 로그인 후 /me/setup에서 정한다. 행 추가는 트리거만, 수정은 본인만, `id`는 수정 불가 (컬럼 GRANT).
+- 세션 읽기는 `features/auth/queries.ts` (`getCurrentUser`, `getMyProfile`, `requireProfile`)만 쓴다. React `cache()`로 요청당 1번. 서버 클라이언트(`lib/supabase/server.ts`)는 `await connection()` 후 만든다 (안 하면 supabase-js가 프리렌더 중 Date.now()를 불러 경고).
+- 보호 경로는 `features/auth/paths.ts`의 `PROTECTED_PREFIXES` (지금 /me). proxy가 비로그인을 /login?next=로 보내고, 페이지는 `requireProfile`로 다시 확인한다.
+- 로그인 후 이동은 항상 `safeNextPath`로 거른다 (외부 URL 차단). next가 없으면 홈으로.
+- `"use server"` 파일의 export는 전부 클라이언트에서 호출 가능한 엔드포인트가 된다. 액션이 아닌 헬퍼는 `queries.ts` 같은 server-only 파일에 둔다.
+- Next 라우트 안내(route announcer)도 role="alert"라서 E2E에서 `getByRole("alert")`는 2개가 잡힌다. 메시지는 텍스트로 찾는다.
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.

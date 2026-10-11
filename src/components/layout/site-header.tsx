@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { siteConfig } from "@/config/site";
+import { LoginLink, UserButton } from "@/features/auth/components/user-button";
 
 import { NavLinkList, NavLinks } from "./nav-links";
 
@@ -14,11 +15,17 @@ export function SiteHeader() {
           <Coffee className="size-5 text-primary" aria-hidden />
           {siteConfig.name}
         </Link>
-        <nav aria-label="주 메뉴" className="hidden md:block">
-          <Suspense fallback={<NavLinkList variant="top" />}>
-            <NavLinks variant="top" />
+        <div className="flex items-center gap-3">
+          <nav aria-label="주 메뉴" className="hidden md:block">
+            <Suspense fallback={<NavLinkList variant="top" />}>
+              <NavLinks variant="top" />
+            </Suspense>
+          </nav>
+          {/* Reads the session cookie, so it streams in after the static header. */}
+          <Suspense fallback={<LoginLink />}>
+            <UserButton />
           </Suspense>
-        </nav>
+        </div>
       </div>
     </header>
   );

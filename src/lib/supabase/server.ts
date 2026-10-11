@@ -2,11 +2,15 @@ import "server-only";
 
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 
 import type { Database } from "./database.types";
 import { getSupabaseEnv } from "./env";
 
 export async function createClient() {
+  // Session data is per request. Without this, Cache Components' prerender validation reaches
+  // supabase-js session loading (which calls Date.now()) and reports an unstable value.
+  await connection();
   const cookieStore = await cookies();
   const { url, publishableKey } = getSupabaseEnv();
 

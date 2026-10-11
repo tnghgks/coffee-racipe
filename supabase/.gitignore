@@ -6,3 +6,6 @@
 .env.keys
 .env.local
 .env.*.local
+
+# OAuth secrets for local auth providers (see config.toml)
+.env
