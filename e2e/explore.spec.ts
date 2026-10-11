@@ -67,11 +67,15 @@ test("infinite scroll loads every page without duplicates", async ({ page }) => 
   await page.goto("/explore");
   await expect(feed(page)).toHaveCount(20);
 
-  // Keep scrolling to the end of the list until the last page has loaded.
+  // Scroll to the end, then wait for that page to arrive (the list grows or the end shows) before
+  // scrolling again. A local DB accumulates public recipes from earlier runs, so allow many pages.
   const end = page.getByText("모두 봤어요");
-  for (let i = 0; i < 20 && !(await end.isVisible()); i++) {
-    await page.getByTestId("explore-list").getByRole("listitem").last().scrollIntoViewIfNeeded();
-    await page.waitForLoadState("networkidle");
+  for (let i = 0; i < 50 && !(await end.isVisible()); i++) {
+    const before = await feed(page).count();
+    await feed(page).last().scrollIntoViewIfNeeded();
+    await expect
+      .poll(async () => (await end.isVisible()) || (await feed(page).count()) > before, { timeout: 10_000 })
+      .toBe(true);
   }
   await expect(end).toBeVisible();
 

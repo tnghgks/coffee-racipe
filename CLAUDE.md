@@ -150,6 +150,12 @@ e2e/                Playwright 테스트
 - 포크는 볼 수 있는 레시피만 (`recipes_check_fork_source` 트리거, security invoker라 호출자 RLS로 확인). 정책에서 같은 테이블을 조회하면 infinite recursion이라 트리거로 했다.
 - 버튼은 낙관적 업데이트 + 가장 최근 요청의 응답만 반영 (`features/community/components/reaction-buttons.tsx`). 상세의 카운트·눌림 상태는 세션으로 새로 읽고(Suspense, fallback은 캐시된 카운트), 액션은 캐시를 무효화하지 않는다 (목록 카드의 카운트는 캐시 수명만큼 늦을 수 있음).
 - **PostgREST 임베드는 FK 이름을 붙인다**: likes·saves가 recipes와 profiles를 둘 다 참조해서 `profiles(...)`가 모호해졌다 → `profiles!recipes_author_id_profiles_fkey(...)`. 두 테이블을 잇는 테이블을 또 만들면 같은 문제가 난다.
+- 5-D 댓글: `comments`는 레시피를 볼 수 있으면 조회, 본인만 수정·소프트 삭제(하드 삭제 권한 없음). 삭제는 `deleted_at`만 보내면 트리거가 시각을 찍고 본문을 비운다(체크 제약: 삭제 전 1~1000자, 삭제 후 ""). 삭제된 댓글은 다시 고칠 수 없다(RLS USING).
+- 댓글 rate limit: 사용자당 1분 5개, insert 트리거(security definer + advisory lock)가 `P0429`로 막는다. 액션이 이 코드를 한국어 안내로 바꾼다.
+- 댓글 목록은 세션으로 읽고 캐시하지 않는다. 작성·수정·삭제 액션은 `refresh()`(next/cache)로 화면을 다시 그린다.
+- 폼 액션 패턴: `useActionState` + 결과마다 `n`을 올려 textarea를 re-key, 실패 시 서버가 `body`를 돌려줘 입력을 살린다 (React 19는 액션 후 폼을 리셋한다). 클라이언트 함수 액션이라 `HydrationFieldset`으로 감싼다.
+- 신고: `reports`(대상 recipe|comment, 사유 enum, 사람당 대상당 1건). 작성은 로그인 사용자(대상이 보여야 함, invoker 트리거), 조회·처리는 관리자만. 중복 신고는 사용자에게 성공과 같게 보인다.
+- 관리자: `profiles.role`(user|admin), UPDATE 권한이 없어 SQL로만 바꾼다. DB는 `public.is_admin()`, 앱은 `isAdmin()`/`requireAdmin()`(`features/auth/queries.ts`, 아니면 404).
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.

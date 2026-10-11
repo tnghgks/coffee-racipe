@@ -111,6 +111,52 @@ export type Database = {
           },
         ];
       };
+      comments: {
+        Row: {
+          body: string;
+          created_at: string;
+          deleted_at: string | null;
+          id: string;
+          recipe_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          body: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          id?: string;
+          recipe_id: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          id?: string;
+          recipe_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "comments_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       drippers: {
         Row: {
           brand: string;
@@ -149,6 +195,7 @@ export type Database = {
           created_at: string;
           display_name: string | null;
           id: string;
+          role: Database["public"]["Enums"]["profile_role"];
           updated_at: string;
           username: string | null;
         };
@@ -159,6 +206,7 @@ export type Database = {
           created_at?: string;
           display_name?: string | null;
           id: string;
+          role?: Database["public"]["Enums"]["profile_role"];
           updated_at?: string;
           username?: string | null;
         };
@@ -168,6 +216,7 @@ export type Database = {
           created_at?: string;
           display_name?: string | null;
           id?: string;
+          role?: Database["public"]["Enums"]["profile_role"];
           updated_at?: string;
           username?: string | null;
         };
@@ -378,6 +427,51 @@ export type Database = {
           },
         ];
       };
+      reports: {
+        Row: {
+          created_at: string;
+          detail: string | null;
+          id: string;
+          reason: Database["public"]["Enums"]["report_reason"];
+          reporter_id: string;
+          resolved_at: string | null;
+          status: Database["public"]["Enums"]["report_status"];
+          target_id: string;
+          target_type: Database["public"]["Enums"]["report_target"];
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          detail?: string | null;
+          id?: string;
+          reason: Database["public"]["Enums"]["report_reason"];
+          reporter_id?: string;
+          resolved_at?: string | null;
+          status?: Database["public"]["Enums"]["report_status"];
+          target_id: string;
+          target_type: Database["public"]["Enums"]["report_target"];
+        };
+        Update: {
+          created_at?: string;
+          detail?: string | null;
+          id?: string;
+          reason?: Database["public"]["Enums"]["report_reason"];
+          reporter_id?: string;
+          resolved_at?: string | null;
+          status?: Database["public"]["Enums"]["report_status"];
+          target_id?: string;
+          target_type?: Database["public"]["Enums"]["report_target"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reports_reporter_id_fkey";
+            columns: ["reporter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -401,6 +495,7 @@ export type Database = {
           sort_key: number;
         }[];
       };
+      is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       recipe_hot_score: {
         Args: { at: string; created_at: string; like_count: number; save_count: number };
         Returns: number;
@@ -417,7 +512,11 @@ export type Database = {
       };
     };
     Enums: {
+      profile_role: "user" | "admin";
       recipe_visibility: "private" | "unlisted" | "public";
+      report_reason: "spam" | "abuse" | "copyright" | "other";
+      report_status: "open" | "resolved" | "dismissed";
+      report_target: "recipe" | "comment";
       roast_level: "light" | "medium_light" | "medium" | "medium_dark" | "dark";
     };
     CompositeTypes: {
@@ -537,7 +636,11 @@ export const Constants = {
   },
   public: {
     Enums: {
+      profile_role: ["user", "admin"],
       recipe_visibility: ["private", "unlisted", "public"],
+      report_reason: ["spam", "abuse", "copyright", "other"],
+      report_status: ["open", "resolved", "dismissed"],
+      report_target: ["recipe", "comment"],
       roast_level: ["light", "medium_light", "medium", "medium_dark", "dark"],
     },
   },

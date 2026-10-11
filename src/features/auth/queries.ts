@@ -1,6 +1,6 @@
 import "server-only";
 
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +16,7 @@ export type Profile = {
   displayName: string | null;
   avatarUrl: string | null;
   bio: string | null;
+  role: "user" | "admin";
 };
 
 /** The signed-in user's id and email from the verified JWT, or null. */
@@ -34,7 +35,7 @@ export const getMyProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, bio")
+    .select("id, username, display_name, avatar_url, bio, role")
     .eq("id", user.id)
     .maybeSingle();
   if (error) throw new Error(`Failed to load profile: ${error.message}`);
@@ -46,8 +47,21 @@ export const getMyProfile = cache(async (): Promise<Profile | null> => {
     displayName: data.display_name,
     avatarUrl: data.avatar_url,
     bio: data.bio,
+    role: data.role,
   };
 });
+
+/** Admin check for the app (RLS uses the matching DB function public.is_admin()). */
+export async function isAdmin(): Promise<boolean> {
+  return (await getMyProfile())?.role === "admin";
+}
+
+/** For admin-only pages: 404 for everyone else, so the page's existence isn't advertised. */
+export async function requireAdmin(): Promise<Profile> {
+  const profile = await getMyProfile();
+  if (profile?.role !== "admin") notFound();
+  return profile;
+}
 
 /**
  * For pages under /me: requires a signed-in user who has picked a username.
