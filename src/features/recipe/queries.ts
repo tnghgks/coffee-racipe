@@ -2,6 +2,7 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 
+import type { Tables } from "@/lib/supabase/database.types";
 import { createPublicClient } from "@/lib/supabase/public";
 
 import type { RecipeListParams } from "./search-params";
@@ -18,24 +19,28 @@ export const recipeTags = {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const summaryColumns =
-  "id, title, description, dose_g, ratio, water_temp_c, total_time_s, is_official, like_count, created_at";
+// Column lists and row types are kept side by side; row types derive from the generated schema
+// so a renamed or retyped column fails typecheck instead of drifting silently.
+const dripperColumns = "slug, name, brand, size_label, max_dose_g";
+type DripperRow = Pick<Tables<"drippers">, "slug" | "name" | "brand" | "size_label" | "max_dose_g">;
 
-type SummaryRow = {
-  id: string;
-  title: string;
-  description: string | null;
-  dose_g: number;
-  ratio: number;
-  water_temp_c: number | null;
-  total_time_s: number;
-  is_official: boolean;
-  like_count: number;
-  created_at: string;
-  drippers: { slug: string; name: string; brand: string; size_label: string | null; max_dose_g: number | null };
-};
+const summaryColumns = `id, title, description, dose_g, ratio, water_temp_c, total_time_s, is_official, like_count, created_at,
+  drippers!inner(${dripperColumns})`;
+type SummaryRow = Pick<
+  Tables<"recipes">,
+  | "id"
+  | "title"
+  | "description"
+  | "dose_g"
+  | "ratio"
+  | "water_temp_c"
+  | "total_time_s"
+  | "is_official"
+  | "like_count"
+  | "created_at"
+> & { drippers: DripperRow };
 
-function toDripper(row: SummaryRow["drippers"]): Dripper {
+function toDripper(row: DripperRow): Dripper {
   return {
     slug: row.slug,
     name: row.name,
@@ -68,7 +73,7 @@ export async function getDrippers(): Promise<Dripper[]> {
 
   const { data, error } = await createPublicClient()
     .from("drippers")
-    .select("slug, name, brand, size_label, max_dose_g")
+    .select(dripperColumns)
     .order("name");
   if (error) throw new Error(`Failed to load drippers: ${error.message}`);
   return data.map(toDripper);
@@ -81,7 +86,7 @@ export async function listPublicRecipes({ dripper, sort }: RecipeListParams): Pr
 
   let query = createPublicClient()
     .from("recipes")
-    .select(`${summaryColumns}, drippers!inner(slug, name, brand, size_label, max_dose_g)`)
+    .select(summaryColumns)
     .eq("visibility", "public")
     .limit(100);
 
@@ -111,7 +116,6 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
     .from("recipes")
     .select(
       `${summaryColumns}, grind_text, source_name, source_url, source_note,
-       drippers!inner(slug, name, brand, size_label, max_dose_g),
        recipe_steps(position, label, start_at_s, water_ratio, note)`,
     )
     .eq("id", id)

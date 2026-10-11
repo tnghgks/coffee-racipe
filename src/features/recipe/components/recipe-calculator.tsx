@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Flame, RotateCcw, Snowflake, TriangleAlert } from "lucide-react";
+import { ArrowRight, Flame, RotateCcw, Snowflake } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { NumberStepper } from "@/components/common/number-stepper";
@@ -16,9 +16,9 @@ import {
 } from "@/lib/brew";
 import { cn } from "@/lib/utils";
 
-import { dripperLabel, exceedsCapacity } from "../dripper";
 import type { Dripper, RecipeStep } from "../types";
 
+import { CapacityNotice, IcedGuide } from "./calculator-notices";
 import { StepTimeline } from "./step-timeline";
 
 type RecipeCalculatorProps = {
@@ -37,8 +37,8 @@ const serveOptions = [
 
 const servingOptions = SERVING_OPTIONS.map((n) => ({ value: String(n), label: `${n}인분` }));
 
-export const DOSE_LIMITS = { min: 1, max: 100, step: 0.5 } as const;
-export const RATIO_LIMITS = { min: 10, max: 20, step: 0.5 } as const;
+const DOSE_LIMITS = { min: 1, max: 100, step: 0.5 } as const;
+const RATIO_LIMITS = { min: 10, max: 20, step: 0.5 } as const;
 
 /** Widens the stepper range so the recipe's own value is always reachable. */
 const withinLimits = (limits: { min: number; max: number; step: number }, value: number) => ({
@@ -107,36 +107,9 @@ export function RecipeCalculator({ dripper, doseG, ratio, steps }: RecipeCalcula
         </div>
 
         {/* Below the dose row so the button being pressed never moves when this appears. */}
-        <div role="status" aria-live="polite" className="empty:hidden">
-          {exceedsCapacity(dose, dripper) && (
-            <p className="flex gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
-              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-              <span>
-                {dripperLabel(dripper)}
-                {dripper.sizeLabel && ` ${dripper.sizeLabel} 사이즈`}는 원두 {dripper.maxDoseG}g까지 권장해요. 넘칠 수
-                있으니 큰 사이즈를 쓰거나 두 번에 나눠 내리세요.
-              </span>
-            </p>
-          )}
-        </div>
+        <CapacityNotice dripper={dripper} doseG={dose} />
 
-        {iced && (
-          <div className="flex flex-col gap-1 rounded-xl bg-sky-50 px-3 py-2.5 text-sm text-sky-900">
-            <p className="flex items-center justify-between gap-2 font-medium">
-              <span className="inline-flex items-center gap-1.5">
-                <Snowflake className="size-4" aria-hidden />
-                서버에 얼음
-              </span>
-              <span className="tabular-nums" data-testid="ice-water">
-                {scaled.iceG}g
-              </span>
-            </p>
-            <p className="text-xs text-sky-800/80">
-              얼음 담은 서버를 저울에 올리고 영점을 맞춘 뒤 내리세요. 아래 물량은 뜨거운 물 기준이고, 분쇄도는 한 단계
-              가늘게 하면 좋아요.
-            </p>
-          </div>
-        )}
+        {iced && <IcedGuide iceG={scaled.iceG} />}
 
         <div className="flex items-center justify-between gap-2 border-t pt-3">
           <div className="flex items-center gap-2">

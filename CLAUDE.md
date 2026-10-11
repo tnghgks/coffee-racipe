@@ -50,6 +50,7 @@ e2e/                Playwright 테스트
 - 타이머 경과 시간은 시작 시각 기준 performance.now() 차이로 계산 (setInterval 누적 금지).
 - UI 문구는 한국어, 코드·커밋 메시지는 영어.
 - 완료 전 pnpm lint && pnpm typecheck && pnpm test 통과.
+- 테스트 역할: Vitest(node 환경)는 순수 함수만, 화면 흐름은 Playwright, 권한은 pgTAP. 컴포넌트 단위 테스트가 필요해지면 그때 jsdom·Testing Library를 다시 들인다.
 
 ### Next.js 16 주의점 (Phase 0에서 확인)
 - 학습 데이터와 API가 다르다. 코드 작성 전 `node_modules/next/dist/docs/`의 해당 문서를 확인한다.
