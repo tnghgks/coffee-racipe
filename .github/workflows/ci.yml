@@ -57,6 +57,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      # API stack only (Postgres, PostgREST, Auth behind Kong) with migrations + seed applied.
+      - run: pnpm exec supabase start -x realtime,storage-api,imgproxy,mailpit,studio,edge-runtime,logflare,vector,supavisor,postgres-meta
+      - name: Write .env.local
+        run: |
+          eval "$(pnpm exec supabase status -o env | grep -E '^(API_URL|PUBLISHABLE_KEY)=')"
+          printf 'NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "$API_URL" "$PUBLISHABLE_KEY" > .env.local
       - run: pnpm e2e
       - uses: actions/upload-artifact@v4
         if: failure()

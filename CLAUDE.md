@@ -34,8 +34,9 @@ src/app/(placeholders)/  아직 안 만든 탭의 "준비 중" 페이지. 해당
 src/features/<도메인>/  recipe, brew, log, community — components, actions.ts, schema.ts, queries.ts
 src/components/ui/  shadcn 컴포넌트 (pnpm dlx shadcn@latest add <name>)
 src/components/layout/  헤더, 모바일 하단 내비
+src/components/common/  여러 도메인이 쓰는 컴포넌트 (NumberStepper 등)
 src/config/         site.ts(서비스명·설명), nav.ts(메뉴 항목)
-src/lib/supabase/   server.ts, client.ts, middleware.ts(updateSession), env.ts, health.ts
+src/lib/supabase/   server.ts(세션), client.ts(브라우저), public.ts(쿠키 없는 anon, use cache용), middleware.ts(updateSession), env.ts, health.ts, database.types.ts(생성)
 src/lib/brew/       환산·타이머 순수 함수 (UI 의존 금지, 단위 테스트 필수)
 src/proxy.ts        Next 16의 middleware 대체 파일. Supabase 세션 갱신
 supabase/migrations/  모든 스키마 변경
@@ -70,6 +71,14 @@ e2e/                Playwright 테스트
 - 물량 표기: `recipes.ratio` = 총 물량 ÷ 원두량, `recipe_steps.water_ratio` = 해당 단계까지 누적 물량 ÷ 원두량. 둘 다 numeric(6,3). 마지막 단계 water_ratio = ratio.
 - 공식 레시피: `is_official = true`, `author_id = null`, 항상 public. 시드 id는 `00000000-0000-4000-8000-0000000000NN`로 고정. 유명 레시피는 수치만 쓰고 `source_name`(·`source_url`)으로 출처 표기, 설명은 직접 작성.
 - 시드는 `supabase/seed.sql` → `pnpm db:reset`으로 다시 넣는다.
+
+### 데이터 조회 (Phase 1-C에서 정함)
+- 방문자와 무관한 공개 데이터는 `features/<도메인>/queries.ts`에서 `createPublicClient()` + `"use cache"` + `cacheLife`/`cacheTag`로 읽는다. 태그는 `recipeTags`를 쓰고, 데이터를 바꾸는 Server Action에서 같은 태그로 무효화한다.
+- 세션이 필요한 데이터(내 private 레시피 등)는 `lib/supabase/server.ts` 클라이언트로 읽고 `use cache`를 쓰지 않는다.
+- DB를 읽는 페이지는 `params`/`searchParams`를 await하고 `loading.tsx`를 둔다. 그래야 빌드 시점에 DB를 호출하지 않는다 (Vercel·CI 빌드에는 DB가 없다). `generateStaticParams`로 DB를 읽지 않는다.
+- 쿼리 결과는 snake_case DB 행을 camelCase 도메인 타입(`features/<도메인>/types.ts`)으로 바꿔서 반환한다.
+- 쿼리스트링은 `search-params.ts`의 파서로 정규화하고, 잘못된 값은 에러 대신 기본값으로 둔다.
+- E2E는 로컬 Supabase 시드에 의존한다. CI E2E 잡도 Supabase를 띄우고 `.env.local`을 만든다.
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.
