@@ -24,6 +24,7 @@ Zod, React Hook Form, Zustand, TanStack Query, Vitest, Playwright, pnpm
 | vitest | 5.0.3 |
 | @playwright/test | 1.64.0 |
 | eslint | 9.39.5 |
+| oxfmt | 0.72.0 (생성 타입 포맷용) |
 
 Zod, React Hook Form, Zustand, TanStack Query, Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
 
@@ -61,6 +62,15 @@ e2e/                Playwright 테스트
 - 서버에서 사용자 확인은 `supabase.auth.getClaims()`를 쓴다 (`getSession()`은 서버에서 신뢰하지 않는다).
 - 환경변수가 없으면 proxy는 세션 갱신을 건너뛰고, `/status` 페이지가 연결 실패를 표시한다.
 
+### DB (Phase 1-A에서 정함)
+- 생성 타입: `src/lib/supabase/database.types.ts` (`pnpm db:types`, 직접 수정 금지). 클라이언트는 `createClient`가 `Database` 제네릭을 이미 붙여 둔다.
+- RLS 테스트는 pgTAP으로 `supabase/tests/database/*.test.sql`에 쓰고 `pnpm db:test`로 돌린다. 새 테이블마다 "다른 사용자 계정으로 접근" 케이스를 넣는다. CI의 Database 잡이 테스트와 타입 최신 여부를 검사한다.
+- 클라이언트가 쓰면 안 되는 컬럼(`like_count`, `save_count`, `is_official`, `search`)은 RLS가 아니라 컬럼 단위 GRANT로 막는다. 쓰기 가능한 컬럼을 추가하면 마이그레이션에서 `grant insert/update (컬럼)`도 같이 추가한다.
+- Phase 5의 카운트 갱신 트리거는 컬럼 GRANT를 우회해야 하므로 `security definer` + `set search_path = ''`로 만든다.
+- 물량 표기: `recipes.ratio` = 총 물량 ÷ 원두량, `recipe_steps.water_ratio` = 해당 단계까지 누적 물량 ÷ 원두량. 둘 다 numeric(6,3). 마지막 단계 water_ratio = ratio.
+- 공식 레시피: `is_official = true`, `author_id = null`, 항상 public. 시드 id는 `00000000-0000-4000-8000-0000000000NN`로 고정. 유명 레시피는 수치만 쓰고 `source_name`(·`source_url`)으로 출처 표기, 설명은 직접 작성.
+- 시드는 `supabase/seed.sql` → `pnpm db:reset`으로 다시 넣는다.
+
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.
 - CI(`.github/workflows/ci.yml`): Lint · Typecheck · Test 통과 후 E2E. Supabase 없이 돈다.
@@ -70,4 +80,4 @@ e2e/                Playwright 테스트
 
 ## 명령어
 pnpm dev | pnpm test | pnpm e2e | pnpm typecheck | pnpm lint
-pnpm db:start | pnpm db:stop | pnpm db:reset | pnpm db:types   (Supabase CLI는 pnpm exec supabase …, Docker 필요)
+pnpm db:start | pnpm db:stop | pnpm db:reset | pnpm db:types | pnpm db:test   (Supabase CLI는 pnpm exec supabase …, Docker 필요)
