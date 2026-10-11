@@ -25,8 +25,9 @@ Zod, React Hook Form, Zustand, TanStack Query, Vitest, Playwright, pnpm
 | @playwright/test | 1.64.0 |
 | eslint | 9.39.5 |
 | oxfmt | 0.72.0 (생성 타입 포맷용) |
+| zustand | 5.0.15 (Phase 2) |
 
-Zod, React Hook Form, Zustand, TanStack Query, Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
+Zod, React Hook Form, TanStack Query, Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
 
 ## 구조
 src/app/            라우트 (서버 컴포넌트 기본)
@@ -82,6 +83,11 @@ e2e/                Playwright 테스트
 - 쿼리 결과는 snake_case DB 행을 camelCase 도메인 타입(`features/<도메인>/types.ts`)으로 바꿔서 반환한다.
 - 쿼리스트링은 `search-params.ts`의 파서로 정규화하고, 잘못된 값은 에러 대신 기본값으로 둔다.
 - E2E는 로컬 Supabase 시드에 의존한다. CI E2E 잡도 Supabase를 띄우고 `.env.local`을 만든다.
+
+### 추출 타이머 (Phase 2-A에서 정함)
+- 상태 머신은 `src/lib/brew/session.ts`: idle → running ⇄ paused → finished. 세션은 "쌓인 ms + 마지막 재개 시각(performance.now())"만 저장하고 경과 시간은 매번 계산한다. 모든 함수는 `now`를 인자로 받는다.
+- 단계 위치는 `src/lib/brew/progress.ts`의 `getBrewProgress(steps, totalTimeS, elapsedS)`. 마지막 붓기 이후~총 시간은 마지막 단계의 구간이다. 끝 시각은 `brewEndS`(총 시간과 마지막 단계 시작 중 큰 값).
+- `src/features/brew/store.ts`의 `createBrewStore(clock)`는 위 함수에 `now`만 넣어 주는 얇은 래퍼다. 화면마다 인스턴스를 만들고(전역 싱글턴 아님), 매 프레임 `completeIfDue(endMs)`로 종료를 판정한다.
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.
