@@ -26,7 +26,7 @@ test("rescales every step when the dose changes from 15g to 20g", async ({ page 
   await expect(page).toHaveTitle(/V60 기본 1인분/);
 
   const cumulative = page.getByTestId("step-cumulative");
-  const total = page.getByTestId("total-water");
+  const total = page.getByTestId("brew-water");
   await expect(cumulative).toHaveText(["30g", "120g", "180g", "240g"]);
   await expect(total).toHaveText("240g");
 
@@ -45,15 +45,37 @@ test("rescales every step when the dose changes from 15g to 20g", async ({ page 
 test("changing the ratio stretches the steps", async ({ page }) => {
   await page.goto(BASIC_V60);
   await page.getByRole("textbox", { name: "비율" }).fill("15");
-  await expect(page.getByTestId("total-water")).toHaveText("225g");
+  await expect(page.getByTestId("brew-water")).toHaveText("225g");
   await expect(page.getByTestId("step-cumulative").last()).toHaveText("225g");
+});
+
+test("switches between hot and iced", async ({ page }) => {
+  await page.goto(BASIC_V60);
+  const serve = page.getByRole("radiogroup", { name: "온도" });
+  const brewWater = page.getByTestId("brew-water");
+  await expect(serve.getByRole("radio", { name: "핫" })).toBeChecked();
+  await expect(page.getByTestId("ice-water")).toHaveCount(0);
+
+  await serve.getByRole("radio", { name: "아이스" }).click();
+  await expect(brewWater).toHaveText("144g");
+  await expect(page.getByTestId("ice-water")).toHaveText("96g");
+  await expect(page.getByTestId("step-cumulative")).toHaveText(["18g", "72g", "108g", "144g"]);
+
+  // dose changes keep the iced split
+  await page.getByRole("textbox", { name: "원두량" }).fill("20");
+  await expect(brewWater).toHaveText("192g");
+  await expect(page.getByTestId("ice-water")).toHaveText("128g");
+
+  await serve.getByRole("radio", { name: "핫" }).click();
+  await expect(brewWater).toHaveText("320g");
+  await expect(page.getByTestId("ice-water")).toHaveCount(0);
 });
 
 test("stepping into decimals does not shift the layout", async ({ page }) => {
   await page.goto(BASIC_V60);
   const doseUp = page.getByRole("button", { name: "원두량 0.5 늘리기" });
   const ratioUp = page.getByRole("button", { name: "비율 0.5 늘리기" });
-  const arrowRow = page.getByTestId("total-water");
+  const arrowRow = page.getByTestId("brew-water");
 
   const before = await Promise.all([doseUp.boundingBox(), ratioUp.boundingBox(), arrowRow.boundingBox()]);
   await doseUp.click(); // 15 → 15.5

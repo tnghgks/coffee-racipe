@@ -69,6 +69,7 @@ e2e/                Playwright 테스트
 - 클라이언트가 쓰면 안 되는 컬럼(`like_count`, `save_count`, `is_official`, `search`)은 RLS가 아니라 컬럼 단위 GRANT로 막는다. 쓰기 가능한 컬럼을 추가하면 마이그레이션에서 `grant insert/update (컬럼)`도 같이 추가한다.
 - Phase 5의 카운트 갱신 트리거는 컬럼 GRANT를 우회해야 하므로 `security definer` + `set search_path = ''`로 만든다.
 - 물량 표기: `recipes.ratio` = 총 물량 ÷ 원두량, `recipe_steps.water_ratio` = 해당 단계까지 누적 물량 ÷ 원두량. 둘 다 numeric(6,3). 마지막 단계 water_ratio = ratio.
+- 아이스 변환은 저장하지 않고 화면에서 계산한다: `scaleRecipe(..., { iceShare })`. 총 물량(원두 × 비율)은 그대로, 그중 `iceShare`(기본 40%)를 얼음으로, 단계 물량은 같은 비율로 줄인다. 추출 모드(Phase 2)로 넘길 때 원두량·비율과 함께 핫/아이스도 넘긴다.
 - 공식 레시피: `is_official = true`, `author_id = null`, 항상 public. 시드 id는 `00000000-0000-4000-8000-0000000000NN`로 고정. 유명 레시피는 수치만 쓰고 `source_name`(·`source_url`)으로 출처 표기, 설명은 직접 작성.
 - 시드는 `supabase/seed.sql` → `pnpm db:reset`으로 다시 넣는다.
 

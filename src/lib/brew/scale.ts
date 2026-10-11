@@ -24,14 +24,28 @@ export type ScaledStep<S extends ScalableStep = ScalableStep> = S & {
 export type ScaledRecipe<S extends ScalableStep = ScalableStep> = {
   doseG: number;
   ratio: number;
+  /** All water in the cup: brew water + ice (dose × ratio). */
   totalWaterG: number;
+  /** Hot water poured through the bed; equals totalWaterG when not iced. */
+  brewWaterG: number;
+  /** Ice placed in the server before brewing; 0 when not iced. */
+  iceG: number;
+  iceShare: number;
   steps: ScaledStep<S>[];
 };
 
 export type ScaleOptions = {
   /** Use a different ratio than the recipe's. Step water is stretched proportionally. */
   ratio?: number;
+  /**
+   * Iced (Japanese-style) brewing: this share of the total water goes into the server as ice and
+   * every step's water shrinks by the same factor, so the cup ends at the recipe's strength.
+   */
+  iceShare?: number;
 };
+
+/** Default ice share for iced brewing: 40% ice, 60% hot water. */
+export const DEFAULT_ICE_SHARE = 0.4;
 
 /** Rounds half up to an integer, absorbing float noise such as 15 * 4.1 = 61.49999999999999. */
 export function roundGrams(value: number): number {
@@ -60,7 +74,14 @@ export function scaleRecipe<S extends ScalableStep>(
   const ratio = options.ratio ?? recipe.ratio;
   assertPositive("ratio", ratio);
 
-  const stretch = ratio / recipe.ratio;
+  const iceShare = options.iceShare ?? 0;
+  if (!Number.isFinite(iceShare) || iceShare < 0 || iceShare >= 1) {
+    throw new RangeError(`iceShare must be in [0, 1), got ${iceShare}`);
+  }
+
+  const totalWaterG = roundGrams(doseG * ratio);
+  const brewWaterG = roundGrams(doseG * ratio * (1 - iceShare));
+  const stretch = (ratio / recipe.ratio) * (1 - iceShare);
   let previousG = 0;
   const steps = recipe.steps.map((step) => {
     const cumulativeWaterG = roundGrams(doseG * step.waterRatio * stretch);
@@ -72,7 +93,11 @@ export function scaleRecipe<S extends ScalableStep>(
   return {
     doseG,
     ratio,
-    totalWaterG: roundGrams(doseG * ratio),
+    totalWaterG,
+    brewWaterG,
+    // Derived from the rounded values so brew water + ice always equals the total.
+    iceG: totalWaterG - brewWaterG,
+    iceShare,
     steps,
   };
 }

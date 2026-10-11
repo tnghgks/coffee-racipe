@@ -89,6 +89,41 @@ describe("scaleRecipe", () => {
     expect(basicV60).toEqual(snapshot);
   });
 
+  it("reports no ice when brewing hot", () => {
+    const result = scaleRecipe(basicV60, 15);
+    expect(result.brewWaterG).toBe(240);
+    expect(result.iceG).toBe(0);
+  });
+
+  describe("iced", () => {
+    it("moves 40% of the water into ice and shrinks every step to match", () => {
+      const result = scaleRecipe(basicV60, 15, { iceShare: 0.4 });
+      expect(result.totalWaterG).toBe(240);
+      expect(result.brewWaterG).toBe(144);
+      expect(result.iceG).toBe(96);
+      expect(cumulative(result)).toEqual([18, 72, 108, 144]);
+      expect(pours(result)).toEqual([18, 54, 36, 36]);
+    });
+
+    it("keeps brew water + ice equal to the total after rounding", () => {
+      const result = scaleRecipe(ultimateV60, 20.5, { iceShare: 0.4 });
+      expect(result.brewWaterG + result.iceG).toBe(result.totalWaterG);
+      expect(result.steps.at(-1)?.cumulativeWaterG).toBe(result.brewWaterG);
+    });
+
+    it("combines with dose and ratio changes", () => {
+      const result = scaleRecipe(ultimateV60, 30, { iceShare: 0.4 });
+      expect(result.totalWaterG).toBe(500);
+      expect(result.brewWaterG).toBe(300);
+      expect(result.iceG).toBe(200);
+      expect(cumulative(result)).toEqual([36, 180, 300, 300]);
+    });
+
+    it.each([-0.1, 1, Number.NaN])("rejects ice share %s", (iceShare) => {
+      expect(() => scaleRecipe(basicV60, 15, { iceShare })).toThrow(RangeError);
+    });
+  });
+
   it.each([-1, Number.NaN, Number.POSITIVE_INFINITY])("rejects dose %s", (dose) => {
     expect(() => scaleRecipe(basicV60, dose)).toThrow(RangeError);
   });
