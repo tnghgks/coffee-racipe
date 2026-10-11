@@ -30,8 +30,10 @@ Zod, React Hook Form, Zustand, TanStack Query, Vitest, Playwright, pnpm
 Zod, React Hook Form, TanStack Query, Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
 
 ## 구조
-src/app/            라우트 (서버 컴포넌트 기본)
-src/app/(placeholders)/  아직 안 만든 탭의 "준비 중" 페이지. 해당 Phase에서 실제 라우트를 만들 때 지운다.
+src/app/            루트 layout은 html/body/폰트만. 라우트는 그룹으로 나눈다 (URL에는 안 나옴)
+src/app/(main)/     헤더·하단 내비가 있는 일반 화면
+src/app/(main)/(placeholders)/  아직 안 만든 탭의 "준비 중" 페이지. 해당 Phase에서 실제 라우트를 만들 때 지운다.
+src/app/(focus)/    헤더·내비 없는 전체 화면 (추출 모드 /recipes/[id]/brew)
 src/features/<도메인>/  recipe, brew, log, community — components, actions.ts, schema.ts, queries.ts
 src/components/ui/  shadcn 컴포넌트 (pnpm dlx shadcn@latest add <name>)
 src/components/layout/  헤더, 모바일 하단 내비
@@ -88,6 +90,14 @@ e2e/                Playwright 테스트
 - 상태 머신은 `src/lib/brew/session.ts`: idle → running ⇄ paused → finished. 세션은 "쌓인 ms + 마지막 재개 시각(performance.now())"만 저장하고 경과 시간은 매번 계산한다. 모든 함수는 `now`를 인자로 받는다.
 - 단계 위치는 `src/lib/brew/progress.ts`의 `getBrewProgress(steps, totalTimeS, elapsedS)`. 마지막 붓기 이후~총 시간은 마지막 단계의 구간이다. 끝 시각은 `brewEndS`(총 시간과 마지막 단계 시작 중 큰 값).
 - `src/features/brew/store.ts`의 `createBrewStore(clock)`는 위 함수에 `now`만 넣어 주는 얇은 래퍼다. 화면마다 인스턴스를 만들고(전역 싱글턴 아님), 매 프레임 `completeIfDue(endMs)`로 종료를 판정한다.
+
+### 추출 화면 (Phase 2-B에서 정함)
+- 원두량·비율·핫/아이스는 쿼리스트링(`?dose=&ratio=&iced=1`)으로 상세 ↔ 추출 화면을 오간다. 파싱·생성은 `features/brew/settings.ts`만 쓴다 (레시피 값과 같으면 생략, 범위 밖이면 레시피 값).
+- 알림 판단은 순수 함수 `lib/brew/cues.ts` (3·2·1초 틱, 단계 전환, 완료). 소리·진동·Wake Lock 같은 브라우저 API는 `features/brew/feedback.ts`, `hooks.ts`에만 둔다.
+- 화면 갱신은 rAF로 하되 리렌더는 ~10fps로 묶는다 (배터리). 알림·종료 판정은 매 프레임.
+- Web Audio는 시작/재개 탭 안에서 `unlock()`해야 iOS에서 소리가 난다. iOS Safari는 진동 미지원이라 소리만.
+- E2E는 `page.clock`으로 시간을 돌린다. 긴 시간은 `fastForward` 후 짧은 `runFor`로 (프레임을 하나하나 돌리면 느리다).
+- 개발 서버의 Next dev indicator는 꺼 두었다 (`devIndicators: false`). 화면 모서리 버튼을 가려 E2E 클릭을 막았다.
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.

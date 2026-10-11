@@ -1,18 +1,23 @@
 "use client";
 
-import { ArrowRight, Flame, RotateCcw, Snowflake } from "lucide-react";
+import { ArrowRight, Flame, Play, RotateCcw, Snowflake } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { NumberStepper } from "@/components/common/number-stepper";
 import { SegmentedControl } from "@/components/common/segmented-control";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { brewSettingsQuery, type BrewSettings } from "@/features/brew/settings";
 import {
   DEFAULT_ICE_SHARE,
+  DOSE_LIMITS,
   doseForServings,
+  RATIO_LIMITS,
   scaleRecipe,
   SERVING_DOSE_G,
   SERVING_OPTIONS,
   servingsForDose,
+  widenLimits,
 } from "@/lib/brew";
 import { cn } from "@/lib/utils";
 
@@ -22,10 +27,14 @@ import { CapacityNotice, IcedGuide } from "./calculator-notices";
 import { StepTimeline } from "./step-timeline";
 
 type RecipeCalculatorProps = {
+  recipeId: string;
   dripper: Dripper;
+  /** The recipe's own dose and ratio ("원래대로" returns to these). */
   doseG: number;
   ratio: number;
   steps: RecipeStep[];
+  /** Starting values, e.g. carried back from brew mode via the query string. */
+  initial: BrewSettings;
 };
 
 type ServeMode = "hot" | "iced";
@@ -37,20 +46,10 @@ const serveOptions = [
 
 const servingOptions = SERVING_OPTIONS.map((n) => ({ value: String(n), label: `${n}인분` }));
 
-const DOSE_LIMITS = { min: 1, max: 100, step: 0.5 } as const;
-const RATIO_LIMITS = { min: 10, max: 20, step: 0.5 } as const;
-
-/** Widens the stepper range so the recipe's own value is always reachable. */
-const withinLimits = (limits: { min: number; max: number; step: number }, value: number) => ({
-  min: Math.min(limits.min, value),
-  max: Math.max(limits.max, value),
-  step: limits.step,
-});
-
-export function RecipeCalculator({ dripper, doseG, ratio, steps }: RecipeCalculatorProps) {
-  const [dose, setDose] = useState(doseG);
-  const [targetRatio, setTargetRatio] = useState(ratio);
-  const [mode, setMode] = useState<ServeMode>("hot");
+export function RecipeCalculator({ recipeId, dripper, doseG, ratio, steps, initial }: RecipeCalculatorProps) {
+  const [dose, setDose] = useState(initial.doseG);
+  const [targetRatio, setTargetRatio] = useState(initial.ratio);
+  const [mode, setMode] = useState<ServeMode>(initial.iced ? "iced" : "hot");
   const iced = mode === "iced";
 
   const scaled = useMemo(
@@ -59,6 +58,7 @@ export function RecipeCalculator({ dripper, doseG, ratio, steps }: RecipeCalcula
   );
   const changed = dose !== doseG || targetRatio !== ratio;
   const servings = servingsForDose(dose);
+  const brewHref = `/recipes/${recipeId}/brew${brewSettingsQuery({ doseG: dose, ratio: targetRatio, iced }, { doseG, ratio })}`;
 
   return (
     <div className="flex flex-col gap-8">
@@ -86,7 +86,7 @@ export function RecipeCalculator({ dripper, doseG, ratio, steps }: RecipeCalcula
               onChange={setDose}
               suffix="g"
               className="-ml-1"
-              {...withinLimits(DOSE_LIMITS, doseG)}
+              {...widenLimits(DOSE_LIMITS, doseG)}
             />
           </div>
           <ArrowRight className="mb-3 size-5 shrink-0 text-muted-foreground" aria-hidden />
@@ -120,7 +120,7 @@ export function RecipeCalculator({ dripper, doseG, ratio, steps }: RecipeCalcula
               onChange={setTargetRatio}
               prefix="1:"
               size="sm"
-              {...withinLimits(RATIO_LIMITS, ratio)}
+              {...widenLimits(RATIO_LIMITS, ratio)}
             />
           </div>
           {changed && (
@@ -138,6 +138,9 @@ export function RecipeCalculator({ dripper, doseG, ratio, steps }: RecipeCalcula
             </Button>
           )}
         </div>
+        <Link href={brewHref} className={cn(buttonVariants({ size: "lg" }), "h-12 text-base")}>
+          <Play aria-hidden />이 설정으로 추출 시작
+        </Link>
       </section>
 
       <section aria-labelledby="steps-heading" className="flex flex-col gap-4">
