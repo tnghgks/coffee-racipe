@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { parseBrewSettings } from "@/features/brew/settings";
 import { OfficialBadge } from "@/features/recipe/components/official-badge";
 import { RecipeCalculator } from "@/features/recipe/components/recipe-calculator";
 import { SourceCredit } from "@/features/recipe/components/source-credit";
@@ -22,8 +23,8 @@ export async function generateMetadata({ params }: PageProps<"/recipes/[id]">): 
   };
 }
 
-export default async function RecipePage({ params }: PageProps<"/recipes/[id]">) {
-  const { id } = await params;
+export default async function RecipePage({ params, searchParams }: PageProps<"/recipes/[id]">) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
   const recipe = await getRecipe(id);
   if (!recipe) notFound();
 
@@ -73,7 +74,14 @@ export default async function RecipePage({ params }: PageProps<"/recipes/[id]">)
         </ul>
       </header>
 
-      <RecipeCalculator dripper={recipe.dripper} doseG={recipe.doseG} ratio={recipe.ratio} steps={recipe.steps} />
+      <RecipeCalculator
+        recipeId={recipe.id}
+        dripper={recipe.dripper}
+        doseG={recipe.doseG}
+        ratio={recipe.ratio}
+        steps={recipe.steps}
+        initial={parseBrewSettings(query, recipe)}
+      />
     </article>
   );
 }

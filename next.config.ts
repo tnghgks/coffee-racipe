@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Keep the dev badge off the mobile bottom nav.
-  devIndicators: { position: "top-right" },
+  // The dev badge covered nav/brew controls in every corner (and blocked E2E clicks). Error overlays still show.
+  devIndicators: false,
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
