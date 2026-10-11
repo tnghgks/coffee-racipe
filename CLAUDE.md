@@ -61,6 +61,13 @@ e2e/                Playwright 테스트
 - 서버에서 사용자 확인은 `supabase.auth.getClaims()`를 쓴다 (`getSession()`은 서버에서 신뢰하지 않는다).
 - 환경변수가 없으면 proxy는 세션 갱신을 건너뛰고, `/status` 페이지가 연결 실패를 표시한다.
 
+### 저장소·배포
+- GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.
+- CI(`.github/workflows/ci.yml`): Lint · Typecheck · Test 통과 후 E2E. Supabase 없이 돈다.
+- Vercel은 `vercel.json`으로 framework를 `nextjs`로 고정했다 (프로젝트를 빈 main으로 import해서 프리셋이 "Other"로 잡혔던 문제).
+- Vercel 프리뷰는 Deployment Protection이 켜져 있어 Vercel 로그인 상태에서만 열린다.
+- 줄바꿈은 `.gitattributes`로 LF 고정 (로컬 git의 autocrlf 무시).
+
 ## 명령어
 pnpm dev | pnpm test | pnpm e2e | pnpm typecheck | pnpm lint
 pnpm db:start | pnpm db:stop | pnpm db:reset | pnpm db:types   (Supabase CLI는 pnpm exec supabase …, Docker 필요)

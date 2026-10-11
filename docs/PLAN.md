@@ -136,7 +136,7 @@ docs/PLAN.md를 읽고 Phase 0을 진행해줘. 먼저 Plan 모드로 계획을 
 - [x] `pnpm dev`로 기본 레이아웃이 뜬다
 - [x] `supabase start` 후 앱에서 Supabase 연결 확인
 - [x] CI가 PR에서 통과한다
-- [ ] Vercel 프리뷰 URL이 생성된다
+- [x] Vercel 프리뷰 URL이 생성된다
 
 ### Phase 1. 레시피 열람·비율 계산기
 
