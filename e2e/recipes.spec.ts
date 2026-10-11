@@ -71,6 +71,28 @@ test("switches between hot and iced", async ({ page }) => {
   await expect(page.getByTestId("ice-water")).toHaveCount(0);
 });
 
+test("picks servings and reflects manual doses", async ({ page }) => {
+  await page.goto(BASIC_V60); // 15g = 1인분
+  const servings = page.getByRole("radiogroup", { name: "인분" });
+  const dose = page.getByRole("textbox", { name: "원두량" });
+  await expect(servings.getByRole("radio", { name: "1인분" })).toBeChecked();
+
+  await servings.getByRole("radio", { name: "3인분" }).click();
+  await expect(dose).toHaveValue("45");
+  await expect(page.getByTestId("brew-water")).toHaveText("720g");
+  await expect(servings.getByRole("radio", { name: "3인분" })).toBeChecked();
+
+  // an in-between dose clears the selection
+  await dose.fill("20");
+  await expect(servings.getByRole("radio", { checked: true })).toHaveCount(0);
+
+  // servings combine with iced
+  await page.getByRole("radiogroup", { name: "온도" }).getByRole("radio", { name: "아이스" }).click();
+  await servings.getByRole("radio", { name: "2인분" }).click();
+  await expect(page.getByTestId("brew-water")).toHaveText("288g");
+  await expect(page.getByTestId("ice-water")).toHaveText("192g");
+});
+
 test("stepping into decimals does not shift the layout", async ({ page }) => {
   await page.goto(BASIC_V60);
   const doseUp = page.getByRole("button", { name: "원두량 0.5 늘리기" });

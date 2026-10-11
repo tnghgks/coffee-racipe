@@ -15,8 +15,10 @@ type Option<T extends string> = {
 type SegmentedControlProps<T extends string> = {
   label: string;
   options: readonly Option<T>[];
-  value: T;
+  /** null selects nothing, e.g. when the current value sits between options. */
+  value: T | null;
   onChange: (value: T) => void;
+  size?: "md" | "sm";
   className?: string;
 };
 
@@ -26,6 +28,7 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  size = "md",
   className,
 }: SegmentedControlProps<T>) {
   return (
@@ -40,7 +43,8 @@ export function SegmentedControl<T extends string>({
             aria-checked={selected}
             onClick={() => onChange(optionValue)}
             className={cn(
-              "inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              "inline-flex items-center justify-center gap-1.5 rounded-full text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              size === "md" ? "min-h-9 px-4" : "min-h-8 px-3",
               selected
                 ? (activeClassName ?? "bg-background text-foreground shadow-sm")
                 : "text-muted-foreground hover:text-foreground",

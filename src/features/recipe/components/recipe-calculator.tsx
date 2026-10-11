@@ -6,7 +6,14 @@ import { useMemo, useState } from "react";
 import { NumberStepper } from "@/components/common/number-stepper";
 import { SegmentedControl } from "@/components/common/segmented-control";
 import { Button } from "@/components/ui/button";
-import { DEFAULT_ICE_SHARE, scaleRecipe } from "@/lib/brew";
+import {
+  DEFAULT_ICE_SHARE,
+  doseForServings,
+  scaleRecipe,
+  SERVING_DOSE_G,
+  SERVING_OPTIONS,
+  servingsForDose,
+} from "@/lib/brew";
 import { cn } from "@/lib/utils";
 
 import type { RecipeStep } from "../types";
@@ -25,6 +32,8 @@ const serveOptions = [
   { value: "hot", label: "핫", icon: Flame, activeClassName: "bg-primary text-primary-foreground shadow-sm" },
   { value: "iced", label: "아이스", icon: Snowflake, activeClassName: "bg-sky-600 text-white shadow-sm" },
 ] as const;
+
+const servingOptions = SERVING_OPTIONS.map((n) => ({ value: String(n), label: `${n}인분` }));
 
 export const DOSE_LIMITS = { min: 1, max: 100, step: 0.5 } as const;
 export const RATIO_LIMITS = { min: 10, max: 20, step: 0.5 } as const;
@@ -47,11 +56,24 @@ export function RecipeCalculator({ doseG, ratio, steps }: RecipeCalculatorProps)
     [ratio, steps, dose, targetRatio, iced],
   );
   const changed = dose !== doseG || targetRatio !== ratio;
+  const servings = servingsForDose(dose);
 
   return (
     <div className="flex flex-col gap-8">
       <section aria-label="비율 계산기" className="flex flex-col gap-4 rounded-2xl border bg-card p-4 shadow-xs sm:p-5">
         <SegmentedControl label="온도" options={serveOptions} value={mode} onChange={setMode} className="self-start" />
+
+        <div className="flex flex-col gap-1.5">
+          <SegmentedControl
+            label="인분"
+            options={servingOptions}
+            value={servings === null ? null : String(servings)}
+            onChange={(value) => setDose(doseForServings(Number(value)))}
+            size="sm"
+            className="grid w-full grid-cols-4"
+          />
+          <p className="text-xs text-muted-foreground">1인분 = 원두 {SERVING_DOSE_G}g</p>
+        </div>
 
         <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
