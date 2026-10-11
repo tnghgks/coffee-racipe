@@ -5,14 +5,20 @@ import { formatGrams, formatRatio, formatSeconds, roundGrams } from "@/lib/brew"
 import { dripperLabel } from "../dripper";
 import type { RecipeSummary } from "../types";
 
+import { DripperIcon } from "./dripper-icon";
 import { OfficialBadge } from "./official-badge";
 
 export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
   return (
     <Link
       href={`/recipes/${recipe.id}`}
-      className="flex h-full flex-col gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      className="group relative isolate flex h-full flex-col gap-2 overflow-hidden rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     >
+      {/* Dripper watermark: large, faint and cropped so it reads as texture, not content. */}
+      <DripperIcon
+        slug={recipe.dripper.slug}
+        className="pointer-events-none absolute -right-5 -bottom-6 -z-10 size-36 -rotate-12 text-primary opacity-[0.08] transition-opacity group-hover:opacity-[0.14]"
+      />
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>{dripperLabel(recipe.dripper)}</span>
         {recipe.isOfficial && <OfficialBadge />}
