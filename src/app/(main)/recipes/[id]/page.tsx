@@ -6,6 +6,7 @@ import { Suspense } from "react";
 
 import { parseBrewSettings } from "@/features/brew/settings";
 import { AuthorLink } from "@/features/community/components/author-link";
+import { RecipeComments } from "@/features/community/components/recipe-comments";
 import { RecipeReactions, RecipeReactionsFallback } from "@/features/community/components/recipe-reactions";
 import { LastAdjustmentNote, MyRecipeLogs } from "@/features/log/components/recipe-log-sections";
 import { OfficialBadge } from "@/features/recipe/components/official-badge";
@@ -113,6 +114,10 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
 
       <Suspense>
         <MyRecipeLogs recipeId={recipe.id} />
+      </Suspense>
+
+      <Suspense>
+        <RecipeComments recipeId={recipe.id} authorId={recipe.authorId} />
       </Suspense>
     </article>
   );

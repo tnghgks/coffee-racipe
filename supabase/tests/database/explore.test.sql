@@ -108,7 +108,7 @@ begin
     from public.explore_recipe_ids(sort => 'popular', at => fixed_at, after_key => k, after_id => last_id, page_size => 3) e
     order by e.sort_key asc, e.id asc limit 1;
     n := n + 1;
-    exit when n > 50;
+    exit when n > 1000; -- safety net only; a local DB keeps growing with E2E data
   end loop;
 end $$;
 

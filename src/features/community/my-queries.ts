@@ -2,7 +2,7 @@ import "server-only";
 
 import { getCurrentUser } from "@/features/auth/queries";
 import { isUuid, summaryColumns, toSummary } from "@/features/recipe/mappers";
-import type { RecipeSummary } from "@/features/recipe/types";
+import type { RecipeAuthor, RecipeSummary } from "@/features/recipe/types";
 import { createClient } from "@/lib/supabase/server";
 
 import type { ReactionState } from "./reactions";
@@ -53,4 +53,45 @@ export async function listSavedRecipes(): Promise<RecipeSummary[]> {
   if (error) throw new Error(`Failed to load saved recipes: ${error.message}`);
   // RLS hides recipes the viewer can no longer see; the embed is then null.
   return data.flatMap((row) => (row.recipes ? [toSummary(row.recipes)] : []));
+}
+
+export type RecipeComment = {
+  id: string;
+  /** "" once deleted. */
+  body: string;
+  createdAt: string;
+  edited: boolean;
+  deleted: boolean;
+  /** null if the author has no username (or was removed). */
+  author: RecipeAuthor | null;
+  isMine: boolean;
+};
+
+/** Comments on a recipe, oldest first. RLS returns nothing if the viewer can't see the recipe. */
+export async function listComments(recipeId: string): Promise<RecipeComment[]> {
+  if (!isUuid(recipeId)) return [];
+  const user = await getCurrentUser();
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("comments")
+    .select(
+      "id, user_id, body, created_at, updated_at, deleted_at, profiles!comments_user_id_fkey(username, display_name, avatar_url)",
+    )
+    .eq("recipe_id", recipeId)
+    .order("created_at")
+    .limit(500);
+  if (error) throw new Error(`Failed to load comments for ${recipeId}: ${error.message}`);
+
+  return data.map((row) => ({
+    id: row.id,
+    body: row.body,
+    createdAt: row.created_at,
+    edited: row.updated_at !== row.created_at,
+    deleted: row.deleted_at !== null,
+    author: row.profiles?.username
+      ? { username: row.profiles.username, displayName: row.profiles.display_name, avatarUrl: row.profiles.avatar_url }
+      : null,
+    isMine: !!user && row.user_id === user.id,
+  }));
 }
