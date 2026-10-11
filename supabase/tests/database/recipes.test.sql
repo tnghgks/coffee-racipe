@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(22);
+select plan(23);
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: two users, each with a private / unlisted / public recipe
@@ -39,6 +39,11 @@ select bag_has(
   $$ select d.slug from public.recipes r join public.drippers d on d.id = r.dripper_id where r.is_official $$,
   $$ values ('v60'), ('kalita-wave'), ('origami'), ('chemex') $$,
   'official recipes cover V60, Kalita Wave, Origami and Chemex'
+);
+
+select is_empty(
+  $$ select slug from public.drippers where max_dose_g is null or size_label is null $$,
+  'every seeded dripper has a capacity'
 );
 
 select is_empty(

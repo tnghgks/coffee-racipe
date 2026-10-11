@@ -28,7 +28,9 @@ export type Database = {
           brand: string;
           created_at: string;
           id: string;
+          max_dose_g: number | null;
           name: string;
+          size_label: string | null;
           slug: string;
         };
         ComputedFields: never;
@@ -36,14 +38,18 @@ export type Database = {
           brand: string;
           created_at?: string;
           id?: string;
+          max_dose_g?: number | null;
           name: string;
+          size_label?: string | null;
           slug: string;
         };
         Update: {
           brand?: string;
           created_at?: string;
           id?: string;
+          max_dose_g?: number | null;
           name?: string;
+          size_label?: string | null;
           slug?: string;
         };
         Relationships: [];

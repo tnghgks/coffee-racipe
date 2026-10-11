@@ -80,7 +80,7 @@ export default async function RecipePage({ params }: PageProps<"/recipes/[id]">)
         </ul>
       </header>
 
-      <RecipeCalculator doseG={recipe.doseG} ratio={recipe.ratio} steps={recipe.steps} />
+      <RecipeCalculator dripper={recipe.dripper} doseG={recipe.doseG} ratio={recipe.ratio} steps={recipe.steps} />
     </article>
   );
 }

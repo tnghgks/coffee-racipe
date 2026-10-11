@@ -32,8 +32,18 @@ type SummaryRow = {
   is_official: boolean;
   like_count: number;
   created_at: string;
-  drippers: Dripper;
+  drippers: { slug: string; name: string; brand: string; size_label: string | null; max_dose_g: number | null };
 };
+
+function toDripper(row: SummaryRow["drippers"]): Dripper {
+  return {
+    slug: row.slug,
+    name: row.name,
+    brand: row.brand,
+    sizeLabel: row.size_label,
+    maxDoseG: row.max_dose_g,
+  };
+}
 
 function toSummary(row: SummaryRow): RecipeSummary {
   return {
@@ -47,7 +57,7 @@ function toSummary(row: SummaryRow): RecipeSummary {
     isOfficial: row.is_official,
     likeCount: row.like_count,
     createdAt: row.created_at,
-    dripper: { slug: row.drippers.slug, name: row.drippers.name, brand: row.drippers.brand },
+    dripper: toDripper(row.drippers),
   };
 }
 
@@ -58,10 +68,10 @@ export async function getDrippers(): Promise<Dripper[]> {
 
   const { data, error } = await createPublicClient()
     .from("drippers")
-    .select("slug, name, brand")
+    .select("slug, name, brand, size_label, max_dose_g")
     .order("name");
   if (error) throw new Error(`Failed to load drippers: ${error.message}`);
-  return data;
+  return data.map(toDripper);
 }
 
 export async function listPublicRecipes({ dripper, sort }: RecipeListParams): Promise<RecipeSummary[]> {
@@ -71,7 +81,7 @@ export async function listPublicRecipes({ dripper, sort }: RecipeListParams): Pr
 
   let query = createPublicClient()
     .from("recipes")
-    .select(`${summaryColumns}, drippers!inner(slug, name, brand)`)
+    .select(`${summaryColumns}, drippers!inner(slug, name, brand, size_label, max_dose_g)`)
     .eq("visibility", "public")
     .limit(100);
 
@@ -101,7 +111,7 @@ export async function getRecipe(id: string): Promise<RecipeDetail | null> {
     .from("recipes")
     .select(
       `${summaryColumns}, grind_text, source_name, source_url,
-       drippers!inner(slug, name, brand),
+       drippers!inner(slug, name, brand, size_label, max_dose_g),
        recipe_steps(position, label, start_at_s, water_ratio, note)`,
     )
     .eq("id", id)

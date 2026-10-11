@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Flame, RotateCcw, Snowflake } from "lucide-react";
+import { ArrowRight, Flame, RotateCcw, Snowflake, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { NumberStepper } from "@/components/common/number-stepper";
@@ -16,11 +16,13 @@ import {
 } from "@/lib/brew";
 import { cn } from "@/lib/utils";
 
-import type { RecipeStep } from "../types";
+import { dripperLabel, exceedsCapacity } from "../dripper";
+import type { Dripper, RecipeStep } from "../types";
 
 import { StepTimeline } from "./step-timeline";
 
 type RecipeCalculatorProps = {
+  dripper: Dripper;
   doseG: number;
   ratio: number;
   steps: RecipeStep[];
@@ -45,7 +47,7 @@ const withinLimits = (limits: { min: number; max: number; step: number }, value:
   step: limits.step,
 });
 
-export function RecipeCalculator({ doseG, ratio, steps }: RecipeCalculatorProps) {
+export function RecipeCalculator({ dripper, doseG, ratio, steps }: RecipeCalculatorProps) {
   const [dose, setDose] = useState(doseG);
   const [targetRatio, setTargetRatio] = useState(ratio);
   const [mode, setMode] = useState<ServeMode>("hot");
@@ -102,6 +104,20 @@ export function RecipeCalculator({ doseG, ratio, steps }: RecipeCalculatorProps)
               <span className="text-base font-normal text-muted-foreground">g</span>
             </span>
           </div>
+        </div>
+
+        {/* Below the dose row so the button being pressed never moves when this appears. */}
+        <div role="status" aria-live="polite" className="empty:hidden">
+          {exceedsCapacity(dose, dripper) && (
+            <p className="flex gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                {dripperLabel(dripper)}
+                {dripper.sizeLabel && ` ${dripper.sizeLabel} 사이즈`}는 원두 {dripper.maxDoseG}g까지 권장해요. 넘칠 수
+                있으니 큰 사이즈를 쓰거나 두 번에 나눠 내리세요.
+              </span>
+            </p>
+          )}
         </div>
 
         {iced && (

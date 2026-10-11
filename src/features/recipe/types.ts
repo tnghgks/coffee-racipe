@@ -2,6 +2,10 @@ export type Dripper = {
   slug: string;
   name: string;
   brand: string;
+  /** Size the capacity refers to, e.g. "02". */
+  sizeLabel: string | null;
+  /** Recommended maximum dose (g) for that size; null = unknown. */
+  maxDoseG: number | null;
 };
 
 export type RecipeSummary = {

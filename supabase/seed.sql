@@ -3,13 +3,14 @@
 -- Well-known recipes keep only their numbers and credit the original; descriptions are our own.
 -- Recipe ids are fixed so links and tests stay stable across `supabase db reset`.
 
-insert into public.drippers (slug, name, brand) values
-  ('v60', 'V60', 'Hario'),
-  ('kalita-wave', 'Kalita Wave', 'Kalita'),
-  ('origami', 'Origami', 'Origami'),
-  ('chemex', 'Chemex', 'Chemex'),
-  ('melitta', 'Melitta 1구', 'Melitta'),
-  ('clever', 'Clever Dripper', 'Clever');
+-- size_label / max_dose_g: the most common size and a typical recommended maximum dose for it.
+insert into public.drippers (slug, name, brand, size_label, max_dose_g) values
+  ('v60', 'V60', 'Hario', '02', 30),
+  ('kalita-wave', 'Kalita Wave', 'Kalita', '185', 30),
+  ('origami', 'Origami', 'Origami', 'M', 30),
+  ('chemex', 'Chemex', 'Chemex', '6컵', 50),
+  ('melitta', 'Melitta 1구', 'Melitta', '1x2', 25),
+  ('clever', 'Clever Dripper', 'Clever', 'L', 30);
 
 insert into public.recipes (
   id, title, description, dripper_id, dose_g, ratio, water_temp_c, grind_text, total_time_s,

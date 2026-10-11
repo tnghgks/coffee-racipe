@@ -93,6 +93,23 @@ test("picks servings and reflects manual doses", async ({ page }) => {
   await expect(page.getByTestId("ice-water")).toHaveText("192g");
 });
 
+test("warns when the dose exceeds the dripper capacity", async ({ page }) => {
+  await page.goto(BASIC_V60); // Hario V60 02: up to 30g
+  const servings = page.getByRole("radiogroup", { name: "인분" });
+  const warning = page.getByText("원두 30g까지 권장해요");
+  await expect(warning).toHaveCount(0);
+
+  await servings.getByRole("radio", { name: "2인분" }).click(); // 30g: at the limit
+  await expect(warning).toHaveCount(0);
+
+  await servings.getByRole("radio", { name: "3인분" }).click(); // 45g
+  await expect(warning).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Hario V60 02 사이즈");
+
+  await servings.getByRole("radio", { name: "1인분" }).click();
+  await expect(warning).toHaveCount(0);
+});
+
 test("stepping into decimals does not shift the layout", async ({ page }) => {
   await page.goto(BASIC_V60);
   const doseUp = page.getByRole("button", { name: "원두량 0.5 늘리기" });
