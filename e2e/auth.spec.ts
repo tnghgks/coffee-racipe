@@ -16,7 +16,8 @@ test("signing in for the first time goes through profile setup and back to the o
   await completeSetup(page, `u_${id}`);
   await expect(page).toHaveURL(/\/me$/);
   await expect(page.getByTestId("my-username")).toHaveText(`@u_${id}`);
-  await expect(page.getByRole("link", { name: "내 정보" }).first()).toBeVisible(); // header avatar
+  // Header avatar reflects the new profile without a reload (initial of "드립 테스터").
+  await expect(page.getByTestId("user-avatar")).toHaveText("드");
 
   await page.getByRole("button", { name: "로그아웃" }).click();
   await expect(page).toHaveURL(/\/$/);

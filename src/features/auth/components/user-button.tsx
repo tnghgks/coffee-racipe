@@ -23,7 +23,7 @@ export async function UserButton() {
   const name = profile.displayName ?? profile.username ?? "나";
 
   return (
-    <Link href="/me" aria-label="내 정보" className="rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+    <Link href="/me" aria-label="내 정보" data-testid="user-avatar" className="rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
       <Avatar src={profile.avatarUrl} name={name} size={32} />
     </Link>
   );

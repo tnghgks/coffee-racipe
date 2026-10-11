@@ -6,6 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import { useStore } from "zustand";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import { newLogHref } from "@/features/log/prefill";
 import type { RecipeDetail } from "@/features/recipe/types";
 import {
   brewEndS,
@@ -147,6 +148,13 @@ export function BrewScreen({ recipe, settings }: BrewScreenProps) {
           brewWaterG={scaled.brewWaterG}
           iceG={scaled.iceG}
           recipeHref={recipeHref}
+          logHref={newLogHref({
+            recipeId: recipe.id,
+            doseG: settings.doseG,
+            ratio: settings.ratio,
+            iced: settings.iced,
+            elapsedS,
+          })}
           onRestart={restart}
         />
       ) : (
@@ -244,12 +252,15 @@ function FinishedView({
   brewWaterG,
   iceG,
   recipeHref,
+  logHref,
   onRestart,
 }: {
   elapsedS: number;
   brewWaterG: number;
   iceG: number;
   recipeHref: string;
+  /** Prefilled log form; signed-out users go through login and come back to it. */
+  logHref: string;
   onRestart: () => void;
 }) {
   return (
@@ -264,11 +275,10 @@ function FinishedView({
         </p>
       </div>
       <div className="flex w-full max-w-xs flex-col gap-2">
-        {/* Connected to the brew log in Phase 4. */}
-        <Button size="lg" className="h-12" disabled>
+        <Link href={logHref} className={cn(buttonVariants({ size: "lg" }), "h-12")}>
           <NotebookPen aria-hidden />
-          기록 남기기 (준비 중)
-        </Button>
+          기록 남기기
+        </Link>
         <Button size="lg" variant="outline" className="h-12" onClick={onRestart}>
           <RotateCcw aria-hidden />
           다시 내리기

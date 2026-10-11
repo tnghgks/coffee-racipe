@@ -95,8 +95,14 @@ describe("conversion", () => {
 
   it("round-trips: stored → form → payload scales back to the same grams", () => {
     const values = recipeFormSchema.parse(recipeToForm(stored));
-    const { recipe, steps } = formToSavePayload(values, "dripper-id");
-    expect(recipe).toMatchObject({ dose_g: 30, ratio: 16.667, total_time_s: 210, grind_text: "중간 가늘게" });
+    const { recipe, steps } = formToSavePayload(values);
+    expect(recipe).toMatchObject({
+      dripper_slug: "v60",
+      dose_g: 30,
+      ratio: 16.667,
+      total_time_s: 210,
+      grind_text: "중간 가늘게",
+    });
     const rescaled = scaleRecipe(
       { ratio: recipe.ratio, steps: steps.map((s) => ({ waterRatio: s.water_ratio })) },
       recipe.dose_g,

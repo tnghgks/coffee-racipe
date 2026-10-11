@@ -61,7 +61,10 @@ test("runs through the steps with pause and resume, then finishes", async ({ pag
   await advance(page, 100_000);
   await expect(page.getByRole("heading", { name: "추출 완료" })).toBeVisible();
   await expect(page.getByTestId("brew-summary")).toHaveText("2:45 · 물 320g");
-  await expect(page.getByRole("button", { name: /기록 남기기/ })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "기록 남기기" })).toHaveAttribute(
+    "href",
+    /^\/me\/logs\/new\?recipe=00000000-0000-4000-8000-000000000003&dose=20&ratio=16&time=165$/,
+  );
 
   await page.getByRole("button", { name: "다시 내리기" }).click();
   await expect(elapsed).toHaveText("0:00");

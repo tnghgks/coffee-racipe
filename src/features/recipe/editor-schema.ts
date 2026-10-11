@@ -130,13 +130,13 @@ export function recipeToForm(
   };
 }
 
-/** Arguments for the save_recipe database function. */
-export function formToSavePayload(values: RecipeFormValues, dripperId: string) {
+/** Arguments for the save_recipe database function (which resolves the dripper slug itself). */
+export function formToSavePayload(values: RecipeFormValues) {
   return {
     recipe: {
       title: values.title,
       description: values.description || null,
-      dripper_id: dripperId,
+      dripper_slug: values.dripperSlug,
       dose_g: values.doseG,
       ratio: values.ratio,
       water_temp_c: values.waterTempC,
