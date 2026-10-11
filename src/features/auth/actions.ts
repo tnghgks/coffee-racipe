@@ -1,6 +1,6 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -11,6 +11,14 @@ import { afterLoginPath, getCurrentUser } from "./queries";
 import { devLoginSchema, profileSchema, type ProfileInput } from "./schema";
 
 export type OAuthProvider = "google" | "kakao";
+
+/**
+ * Who is signed in shows up in shared layouts (the header avatar), and layouts are kept across navigations.
+ * After the session or profile changes, purge the client router cache so they re-render.
+ */
+function revalidateSession() {
+  revalidatePath("/", "layout");
+}
 
 async function siteOrigin() {
   const h = await headers();
@@ -55,6 +63,7 @@ export async function devLogin(_prev: DevLoginState, formData: FormData): Promis
   }
   if (error) return { error: error.message };
 
+  revalidateSession();
   redirect(await afterLoginPath(String(formData.get("next") ?? "/")));
 }
 
@@ -88,6 +97,7 @@ export async function saveProfile(values: ProfileInput, next: string | null): Pr
   if (error?.code === "23505") return { fieldErrors: { username: "이미 사용 중인 이름이에요" } };
   if (error) return { error: "저장하지 못했어요. 잠시 후 다시 시도해 주세요." };
 
+  revalidateSession();
   if (next !== null) redirect(safeNextPath(next, "/me"));
   refresh();
   return { ok: true };
@@ -96,5 +106,6 @@ export async function saveProfile(values: ProfileInput, next: string | null): Pr
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  revalidateSession();
   redirect("/");
 }

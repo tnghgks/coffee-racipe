@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(12);
+select plan(14);
 
 insert into auth.users (id, email) values
   ('11111111-1111-4111-8111-111111111111', 'alice@test.local'),
@@ -111,6 +111,25 @@ select is(
   (select title from public.recipes where id = (select id from saved)), '내 V60 v2',
   'the recipe is unchanged after the attempt'
 );
+
+-- Dripper by slug (what the app sends) and unknown drippers
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
+set local role authenticated;
+create temporary table by_slug (id uuid);
+grant all on by_slug to authenticated;
+insert into by_slug select public.save_recipe(
+  (select recipe from fixture) - 'dripper_id' || '{"dripper_slug":"chemex"}', (select steps from fixture));
+reset role;
+select is(
+  (select d.slug from public.recipes r join public.drippers d on d.id = r.dripper_id where r.id = (select id from by_slug)),
+  'chemex', 'resolves the dripper from its slug'
+);
+set local role authenticated;
+select throws_ok(
+  $$ select public.save_recipe((select recipe from fixture) - 'dripper_id' || '{"dripper_slug":"nope"}', (select steps from fixture)) $$,
+  '23503', null, 'rejects an unknown dripper'
+);
+reset role;
 
 select * from finish();
 rollback;

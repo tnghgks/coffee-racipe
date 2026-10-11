@@ -23,6 +23,94 @@ export type Database = {
   };
   public: {
     Tables: {
+      brew_logs: {
+        Row: {
+          acidity: number | null;
+          bean_name: string | null;
+          body: number | null;
+          brewed_at: string;
+          created_at: string;
+          dose_g: number;
+          grind_text: string | null;
+          iced: boolean;
+          id: string;
+          next_adjustment: string | null;
+          notes: string | null;
+          rating: number;
+          recipe_id: string | null;
+          roast_level: Database["public"]["Enums"]["roast_level"] | null;
+          roaster: string | null;
+          sweetness: number | null;
+          total_time_s: number | null;
+          updated_at: string;
+          user_id: string;
+          water_g: number;
+          water_temp_c: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          acidity?: number | null;
+          bean_name?: string | null;
+          body?: number | null;
+          brewed_at?: string;
+          created_at?: string;
+          dose_g: number;
+          grind_text?: string | null;
+          iced?: boolean;
+          id?: string;
+          next_adjustment?: string | null;
+          notes?: string | null;
+          rating: number;
+          recipe_id?: string | null;
+          roast_level?: Database["public"]["Enums"]["roast_level"] | null;
+          roaster?: string | null;
+          sweetness?: number | null;
+          total_time_s?: number | null;
+          updated_at?: string;
+          user_id?: string;
+          water_g: number;
+          water_temp_c?: number | null;
+        };
+        Update: {
+          acidity?: number | null;
+          bean_name?: string | null;
+          body?: number | null;
+          brewed_at?: string;
+          created_at?: string;
+          dose_g?: number;
+          grind_text?: string | null;
+          iced?: boolean;
+          id?: string;
+          next_adjustment?: string | null;
+          notes?: string | null;
+          rating?: number;
+          recipe_id?: string | null;
+          roast_level?: Database["public"]["Enums"]["roast_level"] | null;
+          roaster?: string | null;
+          sweetness?: number | null;
+          total_time_s?: number | null;
+          updated_at?: string;
+          user_id?: string;
+          water_g?: number;
+          water_temp_c?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "brew_logs_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "brew_logs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       drippers: {
         Row: {
           brand: string;
@@ -228,6 +316,7 @@ export type Database = {
     };
     Enums: {
       recipe_visibility: "private" | "unlisted" | "public";
+      roast_level: "light" | "medium_light" | "medium" | "medium_dark" | "dark";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -347,6 +436,7 @@ export const Constants = {
   public: {
     Enums: {
       recipe_visibility: ["private", "unlisted", "public"],
+      roast_level: ["light", "medium_light", "medium", "medium_dark", "dark"],
     },
   },
 } as const;

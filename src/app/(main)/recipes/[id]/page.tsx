@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { parseBrewSettings } from "@/features/brew/settings";
+import { LastAdjustmentNote, MyRecipeLogs } from "@/features/log/components/recipe-log-sections";
 import { OfficialBadge } from "@/features/recipe/components/official-badge";
 import { ForkLink, ForkOrigin, RecipeActions } from "@/features/recipe/components/recipe-actions";
 import { RecipeCalculator } from "@/features/recipe/components/recipe-calculator";
@@ -87,6 +88,10 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
         </Suspense>
       </header>
 
+      <Suspense>
+        <LastAdjustmentNote recipeId={recipe.id} />
+      </Suspense>
+
       <RecipeCalculator
         recipeId={recipe.id}
         dripper={recipe.dripper}
@@ -95,6 +100,10 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
         steps={recipe.steps}
         initial={parseBrewSettings(query, recipe)}
       />
+
+      <Suspense>
+        <MyRecipeLogs recipeId={recipe.id} />
+      </Suspense>
     </article>
   );
 }

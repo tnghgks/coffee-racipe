@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "내 정보", robots: { index: false 
 
 const links = [
   { href: "/me/recipes", label: "내 레시피", icon: BookOpen, soon: null },
-  { href: "/me/logs", label: "브루 로그", icon: NotebookPen, soon: "Phase 4" },
+  { href: "/me/logs", label: "브루 로그", icon: NotebookPen, soon: null },
 ];
 
 export default async function MePage() {

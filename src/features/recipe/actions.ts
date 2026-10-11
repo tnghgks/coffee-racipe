@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 
 import { formToSavePayload, recipeFormSchema, type RecipeFormInput } from "./editor-schema";
 import { isUuid } from "./mappers";
-import { getDrippers, recipeTags } from "./queries";
+import { recipeTags } from "./queries";
 
 export type SaveRecipeState = {
   /** Field path ("title", "steps.2.cumulativeG", …) → message. */
@@ -28,10 +28,7 @@ export async function saveRecipe(values: RecipeFormInput, recipeId: string | nul
     return { fieldErrors };
   }
 
-  const dripper = (await getDrippers()).find((d) => d.slug === parsed.data.dripperSlug);
-  if (!dripper) return { fieldErrors: { dripperSlug: "드리퍼를 골라 주세요" } };
-
-  const { recipe, steps } = formToSavePayload(parsed.data, dripper.id);
+  const { recipe, steps } = formToSavePayload(parsed.data);
   const supabase = await createClient();
   const { data: savedId, error } = await supabase.rpc("save_recipe", {
     recipe,
@@ -40,6 +37,7 @@ export async function saveRecipe(values: RecipeFormInput, recipeId: string | nul
   });
 
   if (error?.code === "P0002") return { error: "레시피를 찾을 수 없거나 수정 권한이 없어요." };
+  if (error?.code === "23503") return { fieldErrors: { dripperSlug: "드리퍼를 골라 주세요" } };
   if (error?.code === "22023") return { error: "단계의 시간과 물량 순서를 확인해 주세요." };
   if (error || !savedId) return { error: "저장하지 못했어요. 잠시 후 다시 시도해 주세요." };
 
