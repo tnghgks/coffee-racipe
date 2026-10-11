@@ -6,6 +6,7 @@ import { Suspense } from "react";
 
 import { parseBrewSettings } from "@/features/brew/settings";
 import { AuthorLink } from "@/features/community/components/author-link";
+import { RecipeReactions, RecipeReactionsFallback } from "@/features/community/components/recipe-reactions";
 import { LastAdjustmentNote, MyRecipeLogs } from "@/features/log/components/recipe-log-sections";
 import { OfficialBadge } from "@/features/recipe/components/official-badge";
 import { ForkLink, ForkOrigin, RecipeActions } from "@/features/recipe/components/recipe-actions";
@@ -87,9 +88,14 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
           ))}
         </ul>
 
-        <Suspense fallback={<ForkLink recipeId={recipe.id} />}>
-          <RecipeActions recipe={recipe} />
-        </Suspense>
+        <div className="flex flex-wrap items-start gap-2">
+          <Suspense fallback={<RecipeReactionsFallback recipe={recipe} />}>
+            <RecipeReactions recipeId={recipe.id} />
+          </Suspense>
+          <Suspense fallback={<ForkLink recipe={recipe} />}>
+            <RecipeActions recipe={recipe} />
+          </Suspense>
+        </div>
       </header>
 
       <Suspense>

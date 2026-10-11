@@ -15,8 +15,11 @@ type DripperRow = Pick<Tables<"drippers">, "slug" | "name" | "brand" | "size_lab
 const authorColumns = "username, display_name, avatar_url";
 type AuthorRow = Pick<Tables<"profiles">, "username" | "display_name" | "avatar_url">;
 
+// The author embed names its foreign key: recipe_likes/recipe_saves also link recipes and profiles,
+// which makes a bare `profiles(...)` ambiguous.
 export const summaryColumns = `id, author_id, visibility, title, description, dose_g, ratio, water_temp_c, total_time_s,
-  is_official, like_count, created_at, drippers!inner(${dripperColumns}), profiles(${authorColumns})`;
+  is_official, like_count, save_count, created_at, drippers!inner(${dripperColumns}),
+  profiles!recipes_author_id_profiles_fkey(${authorColumns})`;
 type SummaryRow = Pick<
   Tables<"recipes">,
   | "id"
@@ -30,13 +33,14 @@ type SummaryRow = Pick<
   | "total_time_s"
   | "is_official"
   | "like_count"
+  | "save_count"
   | "created_at"
 > & { drippers: DripperRow; profiles: AuthorRow | null };
 
-export const detailColumns = `${summaryColumns}, grind_text, source_name, source_url, source_note, forked_from,
+export const detailColumns = `${summaryColumns}, grind_text, source_name, source_url, source_note, forked_from, fork_count,
   recipe_steps(position, label, start_at_s, water_ratio, note)`;
 type DetailRow = SummaryRow &
-  Pick<Tables<"recipes">, "grind_text" | "source_name" | "source_url" | "source_note" | "forked_from"> & {
+  Pick<Tables<"recipes">, "grind_text" | "source_name" | "source_url" | "source_note" | "forked_from" | "fork_count"> & {
     recipe_steps: Pick<Tables<"recipe_steps">, "position" | "label" | "start_at_s" | "water_ratio" | "note">[];
   };
 
@@ -63,6 +67,7 @@ export function toSummary(row: SummaryRow): RecipeSummary {
     totalTimeS: row.total_time_s,
     isOfficial: row.is_official,
     likeCount: row.like_count,
+    saveCount: row.save_count,
     createdAt: row.created_at,
     dripper: toDripper(row.drippers),
     // Official recipes have no author; authors without a username can't publish, but guard anyway.
@@ -85,6 +90,7 @@ export function toDetail(row: DetailRow): RecipeDetail {
     sourceUrl: row.source_url,
     sourceNote: row.source_note,
     forkedFrom: row.forked_from,
+    forkCount: row.fork_count,
     steps: row.recipe_steps.map(
       (step): RecipeStep => ({
         position: step.position,

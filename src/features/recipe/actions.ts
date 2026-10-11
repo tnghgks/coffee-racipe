@@ -39,6 +39,7 @@ export async function saveRecipe(values: RecipeFormInput, recipeId: string | nul
   if (error?.code === "P0002") return { error: "레시피를 찾을 수 없거나 수정 권한이 없어요." };
   if (error?.code === "23503") return { fieldErrors: { dripperSlug: "드리퍼를 골라 주세요" } };
   if (error?.code === "22023") return { error: "단계의 시간과 물량 순서를 확인해 주세요." };
+  if (error?.code === "42501") return { error: "원본 레시피를 볼 수 없어서 복제할 수 없어요." }; // fork of a hidden recipe
   if (error || !savedId) return { error: "저장하지 못했어요. 잠시 후 다시 시도해 주세요." };
 
   updateTag(recipeTags.all);

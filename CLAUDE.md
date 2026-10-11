@@ -36,7 +36,6 @@ Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한�
 ## 구조
 src/app/            루트 layout은 html/body/폰트만. 라우트는 그룹으로 나눈다 (URL에는 안 나옴)
 src/app/(main)/     헤더·하단 내비가 있는 일반 화면
-src/app/(main)/(placeholders)/  아직 안 만든 탭의 "준비 중" 페이지 (지금은 /explore만). 해당 Phase에서 실제 라우트를 만들 때 지운다.
 src/app/(focus)/    헤더·내비 없는 전체 화면 (추출 모드 /recipes/[id]/brew)
 src/features/<도메인>/  recipe, brew, log, community — components, actions.ts, schema.ts, queries.ts
 src/components/ui/  shadcn 컴포넌트 (pnpm dlx shadcn@latest add <name>)
@@ -146,12 +145,18 @@ e2e/                Playwright 테스트
 - 첫 페이지는 서버 렌더링, 다음 페이지는 `/api/explore`(GET) + TanStack Query `useInfiniteQuery` + IntersectionObserver("더 보기" 버튼 fallback). 검색창은 GET form이라 JS 없이도 동작.
 - 시각을 읽는 코드(`Date.now()`)가 렌더 경로에 있으면 먼저 `await connection()`. 안 하면 Cache Components 프리렌더 검증이 콘솔 에러를 낸다 (E2E 콘솔 가드가 잡는다).
 - 공식 레시피 시드 22개 (PLAN 리스크 대응 "20개 이상"). E2E에서 공식 레시피 수를 셀 때 22.
+- 5-C 좋아요·저장: `recipe_likes`·`recipe_saves`(복합 PK). 행은 **본인만 조회**(PLAN의 "누구나 조회"에서 바꿈: 합계는 recipes 카운트로 충분하고 누가 뭘 눌렀는지는 숨긴다). 쓰기는 `set_recipe_reaction(target, kind, active)` 하나 — 토글이 아니라 원하는 상태를 보내서 연타·재시도가 마지막 클릭으로 수렴하고, 새 합계를 돌려준다.
+- 카운트(`like_count`·`save_count`·`fork_count`)는 security definer 트리거가 `count ± 1`로 갱신 (행 잠금으로 동시 요청 직렬화, 0 미만 방지). `updated_at` 트리거는 작성자가 고치는 컬럼에만 걸어서(`before update of …`) 카운트 변경이 "내 레시피" 정렬을 흔들지 않는다. 편집 가능한 컬럼을 추가하면 이 목록에도 넣는다.
+- 포크는 볼 수 있는 레시피만 (`recipes_check_fork_source` 트리거, security invoker라 호출자 RLS로 확인). 정책에서 같은 테이블을 조회하면 infinite recursion이라 트리거로 했다.
+- 버튼은 낙관적 업데이트 + 가장 최근 요청의 응답만 반영 (`features/community/components/reaction-buttons.tsx`). 상세의 카운트·눌림 상태는 세션으로 새로 읽고(Suspense, fallback은 캐시된 카운트), 액션은 캐시를 무효화하지 않는다 (목록 카드의 카운트는 캐시 수명만큼 늦을 수 있음).
+- **PostgREST 임베드는 FK 이름을 붙인다**: likes·saves가 recipes와 profiles를 둘 다 참조해서 `profiles(...)`가 모호해졌다 → `profiles!recipes_author_id_profiles_fkey(...)`. 두 테이블을 잇는 테이블을 또 만들면 같은 문제가 난다.
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.
 - CI(`.github/workflows/ci.yml`): Lint · Typecheck · Test 통과 후 E2E. Supabase 없이 돈다.
 - Vercel은 `vercel.json`으로 framework를 `nextjs`로 고정했다 (프로젝트를 빈 main으로 import해서 프리셋이 "Other"로 잡혔던 문제).
 - Vercel 프리뷰는 Deployment Protection이 켜져 있어 Vercel 로그인 상태에서만 열린다.
+- 프로덕션 DB(클라우드 Supabase, `supabase link`됨)는 머지 후 `pnpm exec supabase db push`로 마이그레이션을 반영한다. **`seed.sql`은 push로 들어가지 않는다** → 공식 레시피를 추가하면 새 행만 `on conflict do nothing`으로 따로 넣는다.
 - 줄바꿈은 `.gitattributes`로 LF 고정 (로컬 git의 autocrlf 무시).
 
 ## 명령어

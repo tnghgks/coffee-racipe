@@ -1,3 +1,4 @@
+import { Heart } from "lucide-react";
 import Link from "next/link";
 
 import { AuthorLabel } from "@/features/community/components/author-link";
@@ -32,10 +33,17 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
         원두 {formatGrams(recipe.doseG)} · {formatRatio(recipe.ratio)} · 물 {roundGrams(recipe.doseG * recipe.ratio)}g ·{" "}
         {formatSeconds(recipe.totalTimeS)}
       </p>
-      {recipe.author && (
-        <p className="text-xs text-muted-foreground">
-          <AuthorLabel author={recipe.author} />
-        </p>
+      {(recipe.author || recipe.likeCount > 0) && (
+        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          {recipe.author ? <AuthorLabel author={recipe.author} /> : <span />}
+          {recipe.likeCount > 0 && (
+            <span className="inline-flex shrink-0 items-center gap-1 tabular-nums">
+              <Heart className="size-3.5" aria-hidden />
+              <span className="sr-only">좋아요</span>
+              {recipe.likeCount}
+            </span>
+          )}
+        </div>
       )}
     </Link>
   );

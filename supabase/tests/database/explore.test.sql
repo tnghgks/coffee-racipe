@@ -14,7 +14,8 @@ from (values
   ('cccccccc-0000-4000-8000-0000000000c1', '탐색 테스트 공개', 'public', 0, 0, 0),
   ('cccccccc-0000-4000-8000-0000000000c2', '탐색 테스트 링크', 'unlisted', 0, 0, 1),
   ('cccccccc-0000-4000-8000-0000000000c3', '탐색 테스트 비공개', 'private', 0, 0, 1),
-  ('cccccccc-0000-4000-8000-0000000000c4', '탐색 테스트 인기', 'public', 50, 20, 30)
+  -- far above anything E2E leaves behind (a fresh recipe with a few likes scores ~1)
+  ('cccccccc-0000-4000-8000-0000000000c4', '탐색 테스트 인기', 'public', 500, 200, 1)
 ) as v(id, title, visibility, likes, saves, hours);
 
 set local role anon;
