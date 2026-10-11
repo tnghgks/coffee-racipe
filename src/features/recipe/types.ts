@@ -8,8 +8,13 @@ export type Dripper = {
   maxDoseG: number | null;
 };
 
+export type RecipeVisibility = "private" | "unlisted" | "public";
+
 export type RecipeSummary = {
   id: string;
+  /** null for official recipes. */
+  authorId: string | null;
+  visibility: RecipeVisibility;
   title: string;
   description: string | null;
   doseG: number;
@@ -35,5 +40,7 @@ export type RecipeDetail = RecipeSummary & {
   sourceName: string | null;
   sourceUrl: string | null;
   sourceNote: string | null;
+  /** The recipe this one was duplicated from, if any. */
+  forkedFrom: string | null;
   steps: RecipeStep[];
 };

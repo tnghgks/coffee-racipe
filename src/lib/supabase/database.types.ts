@@ -54,6 +54,37 @@ export type Database = {
         };
         Relationships: [];
       };
+      profiles: {
+        Row: {
+          avatar_url: string | null;
+          bio: string | null;
+          created_at: string;
+          display_name: string | null;
+          id: string;
+          updated_at: string;
+          username: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          avatar_url?: string | null;
+          bio?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          id: string;
+          updated_at?: string;
+          username?: string | null;
+        };
+        Update: {
+          avatar_url?: string | null;
+          bio?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          id?: string;
+          updated_at?: string;
+          username?: string | null;
+        };
+        Relationships: [];
+      };
       recipe_steps: {
         Row: {
           id: string;
@@ -166,6 +197,13 @@ export type Database = {
         };
         Relationships: [
           {
+            foreignKeyName: "recipes_author_id_profiles_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "recipes_dripper_id_fkey";
             columns: ["dripper_id"];
             isOneToOne: false;
@@ -186,7 +224,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      save_recipe: { Args: { recipe: Json; recipe_id?: string; steps: Json }; Returns: string };
     };
     Enums: {
       recipe_visibility: "private" | "unlisted" | "public";

@@ -62,7 +62,7 @@ jobs:
       - name: Write .env.local
         run: |
           eval "$(pnpm exec supabase status -o env | grep -E '^(API_URL|PUBLISHABLE_KEY)=')"
-          printf 'NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\n' "$API_URL" "$PUBLISHABLE_KEY" > .env.local
+          printf 'NEXT_PUBLIC_SUPABASE_URL=%s\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=%s\nNEXT_PUBLIC_DEV_LOGIN=1\n' "$API_URL" "$PUBLISHABLE_KEY" > .env.local
       - run: pnpm e2e
       - uses: actions/upload-artifact@v4
         if: failure()

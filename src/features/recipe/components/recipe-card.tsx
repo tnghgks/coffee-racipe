@@ -7,6 +7,7 @@ import type { RecipeSummary } from "../types";
 
 import { DripperIcon } from "./dripper-icon";
 import { OfficialBadge } from "./official-badge";
+import { VisibilityBadge } from "./visibility-badge";
 
 export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
   return (
@@ -21,7 +22,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
       />
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>{dripperLabel(recipe.dripper)}</span>
-        {recipe.isOfficial && <OfficialBadge />}
+        {recipe.isOfficial ? <OfficialBadge /> : <VisibilityBadge visibility={recipe.visibility} />}
       </div>
       <h2 className="font-semibold leading-snug">{recipe.title}</h2>
       {recipe.description && <p className="line-clamp-2 text-sm text-muted-foreground">{recipe.description}</p>}

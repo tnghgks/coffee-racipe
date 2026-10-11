@@ -2,18 +2,21 @@ import { Bean, ChevronLeft, Thermometer, Timer } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { parseBrewSettings } from "@/features/brew/settings";
 import { OfficialBadge } from "@/features/recipe/components/official-badge";
+import { ForkLink, ForkOrigin, RecipeActions } from "@/features/recipe/components/recipe-actions";
 import { RecipeCalculator } from "@/features/recipe/components/recipe-calculator";
 import { SourceCredit } from "@/features/recipe/components/source-credit";
+import { VisibilityBadge } from "@/features/recipe/components/visibility-badge";
 import { dripperLabel } from "@/features/recipe/dripper";
-import { getRecipe } from "@/features/recipe/queries";
+import { getRecipeForViewer } from "@/features/recipe/my-queries";
 import { formatGrams, formatRatio, formatSeconds } from "@/lib/brew";
 
 export async function generateMetadata({ params }: PageProps<"/recipes/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const recipe = await getRecipe(id);
+  const recipe = await getRecipeForViewer(id);
   if (!recipe) return { title: "레시피를 찾을 수 없어요" };
 
   const summary = `${dripperLabel(recipe.dripper)} · 원두 ${formatGrams(recipe.doseG)} · ${formatRatio(recipe.ratio)}`;
@@ -25,7 +28,7 @@ export async function generateMetadata({ params }: PageProps<"/recipes/[id]">): 
 
 export default async function RecipePage({ params, searchParams }: PageProps<"/recipes/[id]">) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
-  const recipe = await getRecipe(id);
+  const recipe = await getRecipeForViewer(id);
   if (!recipe) notFound();
 
   // Dose and ratio live in the calculator; only the fixed conditions are shown here.
@@ -49,10 +52,16 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>{dripperLabel(recipe.dripper)}</span>
-            {recipe.isOfficial && <OfficialBadge />}
+            {recipe.isOfficial ? <OfficialBadge /> : <VisibilityBadge visibility={recipe.visibility} />}
           </div>
           <h1 className="text-2xl leading-tight font-bold tracking-tight text-balance">{recipe.title}</h1>
         </div>
+
+        {recipe.forkedFrom && (
+          <Suspense>
+            <ForkOrigin forkedFrom={recipe.forkedFrom} />
+          </Suspense>
+        )}
 
         {recipe.description && <p className="text-muted-foreground">{recipe.description}</p>}
 
@@ -72,6 +81,10 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
             </li>
           ))}
         </ul>
+
+        <Suspense fallback={<ForkLink recipeId={recipe.id} />}>
+          <RecipeActions recipe={recipe} />
+        </Suspense>
       </header>
 
       <RecipeCalculator

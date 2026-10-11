@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 // Requires local Supabase with supabase/seed.sql applied.
 const BASIC_V60 = "/recipes/00000000-0000-4000-8000-000000000003"; // 15g, 1:16, steps 2/8/12/16
