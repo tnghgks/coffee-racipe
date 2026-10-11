@@ -173,6 +173,74 @@ export type Database = {
         };
         Relationships: [];
       };
+      recipe_likes: {
+        Row: {
+          created_at: string;
+          recipe_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          recipe_id: string;
+          user_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          recipe_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_likes_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recipe_likes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      recipe_saves: {
+        Row: {
+          created_at: string;
+          recipe_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          recipe_id: string;
+          user_id?: string;
+        };
+        Update: {
+          created_at?: string;
+          recipe_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipe_saves_recipe_id_fkey";
+            columns: ["recipe_id"];
+            isOneToOne: false;
+            referencedRelation: "recipes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recipe_saves_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       recipe_steps: {
         Row: {
           id: string;
@@ -219,6 +287,7 @@ export type Database = {
           description: string | null;
           dose_g: number;
           dripper_id: string;
+          fork_count: number;
           forked_from: string | null;
           grind_text: string | null;
           id: string;
@@ -243,6 +312,7 @@ export type Database = {
           description?: string | null;
           dose_g: number;
           dripper_id: string;
+          fork_count?: number;
           forked_from?: string | null;
           grind_text?: string | null;
           id?: string;
@@ -266,6 +336,7 @@ export type Database = {
           description?: string | null;
           dose_g?: number;
           dripper_id?: string;
+          fork_count?: number;
           forked_from?: string | null;
           grind_text?: string | null;
           id?: string;
@@ -335,6 +406,15 @@ export type Database = {
         Returns: number;
       };
       save_recipe: { Args: { recipe: Json; recipe_id?: string; steps: Json }; Returns: string };
+      set_recipe_reaction: {
+        Args: { active: boolean; kind: string; target: string };
+        Returns: {
+          liked: boolean;
+          likes: number;
+          saved: boolean;
+          saves: number;
+        }[];
+      };
     };
     Enums: {
       recipe_visibility: "private" | "unlisted" | "public";

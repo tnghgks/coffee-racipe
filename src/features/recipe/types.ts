@@ -29,6 +29,7 @@ export type RecipeSummary = {
   totalTimeS: number;
   isOfficial: boolean;
   likeCount: number;
+  saveCount: number;
   createdAt: string;
   dripper: Dripper;
   /** null for official recipes. */
@@ -50,5 +51,7 @@ export type RecipeDetail = RecipeSummary & {
   sourceNote: string | null;
   /** The recipe this one was duplicated from, if any. */
   forkedFrom: string | null;
+  /** How many recipes were duplicated from this one (any visibility). */
+  forkCount: number;
   steps: RecipeStep[];
 };
