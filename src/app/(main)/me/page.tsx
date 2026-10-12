@@ -1,10 +1,9 @@
-import { BookOpen, Bookmark, ChevronRight, LogOut, NotebookPen, Pencil } from "lucide-react";
+import { BookOpen, Bookmark, ChevronRight, NotebookPen, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Avatar } from "@/components/common/avatar";
-import { Button } from "@/components/ui/button";
-import { signOut } from "@/features/auth/actions";
+import { SignOutForm } from "@/features/auth/components/sign-out-form";
 import { requireProfile } from "@/features/auth/queries";
 
 export const metadata: Metadata = { title: "내 정보", robots: { index: false } };
@@ -52,12 +51,7 @@ export default async function MePage() {
         ))}
       </ul>
 
-      <form action={signOut}>
-        <Button type="submit" variant="ghost" className="h-11 w-full text-muted-foreground">
-          <LogOut aria-hidden />
-          로그아웃
-        </Button>
-      </form>
+      <SignOutForm />
     </section>
   );
 }

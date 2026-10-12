@@ -15,8 +15,10 @@ import { RecipeCalculator } from "@/features/recipe/components/recipe-calculator
 import { SourceCredit } from "@/features/recipe/components/source-credit";
 import { VisibilityBadge } from "@/features/recipe/components/visibility-badge";
 import { dripperLabel } from "@/features/recipe/dripper";
+import { CacheForOffline } from "@/features/pwa/components/cache-for-offline";
 import { getRecipeForViewer } from "@/features/recipe/my-queries";
 import { formatGrams, formatRatio, formatSeconds } from "@/lib/brew";
+import { recipeOfflineUrls } from "@/lib/pwa/offline";
 
 export async function generateMetadata({ params }: PageProps<"/recipes/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -46,6 +48,8 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
 
   return (
     <article className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      {/* recently viewed recipes (and their brew mode) open offline */}
+      <CacheForOffline urls={recipeOfflineUrls(recipe.id)} />
       <header className="flex flex-col gap-3">
         <Link
           href="/recipes"
