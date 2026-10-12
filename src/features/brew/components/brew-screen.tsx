@@ -2,11 +2,12 @@
 
 import { Check, NotebookPen, RotateCcw, Snowflake, Square, X } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useStore } from "zustand";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { newLogHref } from "@/features/log/prefill";
+import { recordBrewStarted } from "@/features/pwa/client";
 import type { RecipeDetail } from "@/features/recipe/types";
 import {
   brewEndS,
@@ -25,13 +26,16 @@ import { cn } from "@/lib/utils";
 
 import { createBeeper, vibrate } from "../feedback";
 import { useAnimationFrame, useWakeLock, useWakeLockSupported } from "../hooks";
-import { brewSettingsQuery, type BrewSettings } from "../settings";
+import { brewSettingsQuery, parseBrewSettings, type BrewSettings } from "../settings";
 import { createBrewStore } from "../store";
 
 type BrewScreenProps = {
   recipe: Pick<RecipeDetail, "id" | "title" | "doseG" | "ratio" | "totalTimeS" | "steps">;
   settings: BrewSettings;
 };
+
+const noSubscription = () => () => {};
+const readSearch = () => window.location.search;
 
 /** Re-render at ~10fps; cues and completion are still checked on every frame. */
 const RENDER_INTERVAL_MS = 100;
@@ -43,7 +47,14 @@ const statusHint = {
   finished: "",
 } as const;
 
-export function BrewScreen({ recipe, settings }: BrewScreenProps) {
+export function BrewScreen({ recipe, settings: serverSettings }: BrewScreenProps) {
+  // Offline, the service worker serves this page from a copy cached without the query string, so the
+  // server-parsed settings may be the recipe defaults. In the browser the URL is the source of truth.
+  const search = useSyncExternalStore(noSubscription, readSearch, () => null);
+  const settings = useMemo(
+    () => (search === null ? serverSettings : parseBrewSettings(Object.fromEntries(new URLSearchParams(search)), recipe)),
+    [search, serverSettings, recipe],
+  );
   const [store] = useState(() => createBrewStore());
   const [beeper] = useState(createBeeper);
   const session = useStore(store, (s) => s.session);
@@ -94,6 +105,7 @@ export function BrewScreen({ recipe, settings }: BrewScreenProps) {
   const onStageTap = () => {
     if (session.status === "finished") return;
     beeper.unlock(); // must happen inside the gesture for iOS
+    if (session.status === "idle") recordBrewStarted(); // install banner shows after a couple of brews
     lastCue.current = null; // no cues for whatever was already true before the clock (re)starts
     store.getState().toggle();
   };

@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/build-sw.mjs && next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit && tsc --noEmit -p tsconfig.sw.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
@@ -15,7 +15,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/lib/supabase/database.types.ts && oxfmt src/lib/supabase/database.types.ts",
-    "db:test": "supabase test db"
+    "db:test": "supabase test db",
+    "sw": "node scripts/build-sw.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -45,6 +46,7 @@
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "oxfmt": "^0.72.0",

@@ -8,12 +8,18 @@ import { test as base, expect } from "@playwright/test";
 // Expected noise: 404 navigations (not-found tests) log a failed resource load.
 const IGNORED = [/Failed to load resource: the server responded with a status of 404/];
 
-export const test = base.extend<{ consoleErrors: string[] }>({
+export const test = base.extend<{ consoleErrors: string[]; allowConsoleError: RegExp | null }>({
+  /**
+   * Console errors a spec expects, e.g. failed loads while offline: `test.use({ allowConsoleError: /…/ })`.
+   * A single RegExp: Playwright would read an array here as a [value, options] tuple.
+   */
+  allowConsoleError: [null, { option: true }],
   consoleErrors: [
-    async ({ page }, use) => {
+    async ({ page, allowConsoleError }, use) => {
+      const ignored = allowConsoleError ? [...IGNORED, allowConsoleError] : IGNORED;
       const errors: string[] = [];
       page.on("console", (message) => {
-        if (message.type() === "error" && !IGNORED.some((re) => re.test(message.text()))) {
+        if (message.type() === "error" && !ignored.some((re) => re.test(message.text()))) {
           errors.push(message.text().slice(0, 500));
         }
       });

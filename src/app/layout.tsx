@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Noto_Sans_KR } from "next/font/google";
 
 import { siteConfig } from "@/config/site";
+import { OfflineBanner } from "@/features/pwa/components/offline-banner";
+import { ServiceWorker } from "@/features/pwa/components/service-worker";
 
 import "./globals.css";
 
@@ -35,7 +37,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko" className={`${notoSansKr.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <ServiceWorker />
+        <OfflineBanner />
+        {children}
+      </body>
     </html>
   );
 }

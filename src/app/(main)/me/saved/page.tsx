@@ -5,7 +5,9 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { requireProfile } from "@/features/auth/queries";
 import { listSavedRecipes } from "@/features/community/my-queries";
+import { CacheForOffline } from "@/features/pwa/components/cache-for-offline";
 import { RecipeCard } from "@/features/recipe/components/recipe-card";
+import { recipeOfflineUrls } from "@/lib/pwa/offline";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "저장한 레시피", robots: { index: false } };
@@ -16,6 +18,8 @@ export default async function SavedRecipesPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* saved recipes stay available offline, brew mode included */}
+      <CacheForOffline urls={["/me/saved", ...recipes.flatMap((recipe) => recipeOfflineUrls(recipe.id))]} />
       <header>
         <h1 className="text-2xl font-bold tracking-tight">저장한 레시피</h1>
         <p className="text-sm text-muted-foreground">레시피 {recipes.length}개</p>

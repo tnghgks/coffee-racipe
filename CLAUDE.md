@@ -31,7 +31,9 @@ Zod, React Hook Form, Zustand, TanStack Query, Vitest, Playwright, pnpm
 | @dnd-kit/core · sortable · utilities | 6.3.1 · 10.0.0 · 3.2.2 (Phase 3, 단계 드래그 정렬) |
 | @tanstack/react-query | 5.104.1 (Phase 5, 탐색 무한 스크롤) |
 
-Serwist는 처음 쓰는 Phase에서 설치하고 여기에 버전을 추가한다.
+| esbuild | 0.28.2 (Phase 6-A, 서비스 워커 번들) |
+
+Serwist는 쓰지 않는다 (Phase 6-A): Turbopack 연동(@serwist/turbopack)이 Route Handler의 `dynamic`·`revalidate` 세그먼트 설정에 기대는데 Cache Components와 같이 못 쓴다. 서비스 워커는 직접 작성한다.
 
 ## 구조
 src/app/            루트 layout은 html/body/폰트만. 라우트는 그룹으로 나눈다 (URL에는 안 나옴)
@@ -45,6 +47,9 @@ src/config/         site.ts(서비스명·설명), nav.ts(메뉴 항목)
 src/lib/supabase/   server.ts(세션), client.ts(브라우저), public.ts(쿠키 없는 anon, use cache용), middleware.ts(updateSession), env.ts, health.ts, database.types.ts(생성)
 src/lib/brew/       환산·타이머 순수 함수 (UI 의존 금지, 단위 테스트 필수)
 src/proxy.ts        Next 16의 middleware 대체 파일. Supabase 세션 갱신
+src/sw/sw.ts        서비스 워커. scripts/build-sw.mjs(esbuild)가 public/sw.js로 묶는다 (생성 파일, 커밋 안 함). 타입 검사는 tsconfig.sw.json
+src/lib/pwa/        서비스 워커와 앱이 같이 쓰는 캐시 규칙 (순수 함수, 단위 테스트)
+src/features/pwa/   서비스 워커 등록·메시지, 설치 배너, 오프라인 배너·목록
 supabase/migrations/  모든 스키마 변경
 e2e/                Playwright 테스트
 
@@ -156,6 +161,17 @@ e2e/                Playwright 테스트
 - 폼 액션 패턴: `useActionState` + 결과마다 `n`을 올려 textarea를 re-key, 실패 시 서버가 `body`를 돌려줘 입력을 살린다 (React 19는 액션 후 폼을 리셋한다). 클라이언트 함수 액션이라 `HydrationFieldset`으로 감싼다.
 - 신고: `reports`(대상 recipe|comment, 사유 enum, 사람당 대상당 1건). 작성은 로그인 사용자(대상이 보여야 함, invoker 트리거), 조회·처리는 관리자만. 중복 신고는 사용자에게 성공과 같게 보인다.
 - 관리자: `profiles.role`(user|admin), UPDATE 권한이 없어 SQL로만 바꾼다. DB는 `public.is_admin()`, 앱은 `isAdmin()`/`requireAdmin()`(`features/auth/queries.ts`, 아니면 404).
+
+### PWA (Phase 6-A에서 정함)
+- 서비스 워커는 **프로덕션 빌드에서만** 등록한다 (`SERVICE_WORKER_ENABLED`). `pnpm build`가 먼저 `public/sw.js`를 만든다 (`pnpm sw`로 따로도 가능).
+- 캐시: `/_next/static` cache-first(400개), 페이지 HTML network-first(80개, 경로 기준이라 쿼리 무시), 아이콘·manifest·/offline은 설치 때. 캐시할 페이지는 `isCacheablePage` 허용 목록 (홈, /recipes, 레시피 상세·추출, /me/saved, /offline). 폼·로그·관리 화면은 캐시하지 않는다.
+- 클라이언트 이동(RSC 요청)은 캐시하지 않는다. 오프라인이면 SW가 503 text/plain을 돌려주고, Next는 그걸 보고 전체 페이지 로드로 바꿔서 캐시된 HTML이 열린다 (fetch를 실패시키면 같은 결과지만 콘솔 에러가 남는다).
+- 미리 받아 두기: 레시피 상세를 열면 상세+추출 화면을, /me/saved를 열면 저장한 레시피 전부를 `CacheForOffline` → SW가 HTML과 그 안의 `/_next/static` 파일까지 받는다. 10분 안에 받은 페이지는 다시 받지 않는다 (/me/saved 제외).
+- 추출 화면은 브라우저에서 URL의 `?dose=&ratio=&iced=`를 다시 읽는다 (오프라인 캐시는 쿼리 없이 저장되므로).
+- 로그아웃하면 캐시된 페이지를 지운다 (`SignOutForm` → `CLEAR_PAGES`).
+- 한글 폰트(Noto Sans KR)는 글자 범위별로 쪼개져 필요할 때만 받는다. 오프라인에서 처음 쓰는 글자는 시스템 폰트로 보인다 (전부 미리 받으면 수 MB).
+- 설치 배너: 추출 시작 2회 후 한 번만 (localStorage). Chrome은 `beforeinstallprompt`를 잡아 두었다가 "설치" 버튼, iOS는 "공유 → 홈 화면에 추가" 안내.
+- E2E: `e2e/pwa.spec.ts`는 Playwright `pwa` 프로젝트가 `pnpm build && pnpm start --port 3100`에서 돌린다 (`context.setOffline`). 이미 띄워 둔 서버를 쓰려면 `PLAYWRIGHT_PWA_URL`. 오프라인 테스트처럼 예상된 콘솔 에러는 `test.use({ allowConsoleError: /…/ })` (배열은 Playwright가 튜플로 읽어서 RegExp 하나).
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.
