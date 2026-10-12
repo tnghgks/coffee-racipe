@@ -80,13 +80,10 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
           <SourceCredit name={recipe.sourceName} url={recipe.sourceUrl} note={recipe.sourceNote} />
         )}
 
-        <ul className="flex flex-wrap gap-2" aria-label="추출 조건">
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm" aria-label="추출 조건">
           {specs.map(({ icon: Icon, label, value }) => (
-            <li
-              key={label}
-              className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground"
-            >
-              <Icon className="size-4 opacity-70" aria-hidden />
+            <li key={label} className="inline-flex items-center gap-1.5">
+              <Icon className="size-4 text-muted-foreground" aria-hidden />
               <span className="sr-only">{label}</span>
               {value}
             </li>

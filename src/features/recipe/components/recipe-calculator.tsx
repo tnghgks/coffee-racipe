@@ -14,7 +14,6 @@ import {
   doseForServings,
   RATIO_LIMITS,
   scaleRecipe,
-  SERVING_DOSE_G,
   SERVING_OPTIONS,
   servingsForDose,
   widenLimits,
@@ -63,66 +62,9 @@ export function RecipeCalculator({ recipeId, dripper, doseG, ratio, steps, initi
   return (
     <div className="flex flex-col gap-8">
       <section aria-label="비율 계산기" className="flex flex-col gap-4 rounded-2xl border bg-card p-4 shadow-xs sm:p-5">
-        <SegmentedControl label="온도" options={serveOptions} value={mode} onChange={setMode} className="self-start" />
-
-        <div className="flex flex-col gap-1.5">
-          <SegmentedControl
-            label="인분"
-            options={servingOptions}
-            value={servings === null ? null : String(servings)}
-            onChange={(value) => setDose(doseForServings(Number(value)))}
-            size="sm"
-            className="grid w-full grid-cols-4"
-          />
-          <p className="text-xs text-muted-foreground">1인분 = 원두 {SERVING_DOSE_G}g</p>
-        </div>
-
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground">원두</span>
-            <NumberStepper
-              label="원두량"
-              value={dose}
-              onChange={setDose}
-              suffix="g"
-              className="-ml-1"
-              {...widenLimits(DOSE_LIMITS, doseG)}
-            />
-          </div>
-          <ArrowRight className="mb-3 size-5 shrink-0 text-muted-foreground" aria-hidden />
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-xs font-medium text-muted-foreground">{iced ? "뜨거운 물" : "물"}</span>
-            <span
-              className="flex h-11 items-baseline gap-0.5 font-bold tabular-nums"
-              aria-live="polite"
-              data-testid="brew-water"
-            >
-              {/* Reserve 4 digits (up to 100g × 1:20) so the row doesn't shift. */}
-              <span className={cn("min-w-[4ch] text-right text-3xl", iced ? "text-sky-700" : "text-primary")}>
-                {scaled.brewWaterG}
-              </span>
-              <span className="text-base font-normal text-muted-foreground">g</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Below the dose row so the button being pressed never moves when this appears. */}
-        <CapacityNotice dripper={dripper} doseG={dose} />
-
-        {iced && <IcedGuide iceG={scaled.iceG} />}
-
-        <div className="flex items-center justify-between gap-2 border-t pt-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">비율</span>
-            <NumberStepper
-              label="비율"
-              value={targetRatio}
-              onChange={setTargetRatio}
-              prefix="1:"
-              size="sm"
-              {...widenLimits(RATIO_LIMITS, ratio)}
-            />
-          </div>
+        {/* Fixed height so the reset button appearing never moves the rows below. */}
+        <div className="flex h-11 items-center justify-between gap-2">
+          <SegmentedControl label="온도" options={serveOptions} value={mode} onChange={setMode} />
           {changed && (
             <Button
               variant="ghost"
@@ -137,6 +79,62 @@ export function RecipeCalculator({ recipeId, dripper, doseG, ratio, steps, initi
               원래대로
             </Button>
           )}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-muted-foreground">원두</span>
+              <NumberStepper
+                label="원두량"
+                value={dose}
+                onChange={setDose}
+                suffix="g"
+                className="-ml-1"
+                {...widenLimits(DOSE_LIMITS, doseG)}
+              />
+            </div>
+            <ArrowRight className="mb-3 size-5 shrink-0 text-muted-foreground" aria-hidden />
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-xs font-medium text-muted-foreground">{iced ? "뜨거운 물" : "물"}</span>
+              <span
+                className="flex h-11 items-baseline gap-0.5 font-bold tabular-nums"
+                aria-live="polite"
+                data-testid="brew-water"
+              >
+                {/* Reserve 4 digits (up to 100g × 1:20) so the row doesn't shift. */}
+                <span className={cn("min-w-[4ch] text-right text-3xl", iced ? "text-sky-700" : "text-primary")}>
+                  {scaled.brewWaterG}
+                </span>
+                <span className="text-base font-normal text-muted-foreground">g</span>
+              </span>
+            </div>
+          </div>
+          <SegmentedControl
+            label="인분"
+            options={servingOptions}
+            value={servings === null ? null : String(servings)}
+            onChange={(value) => setDose(doseForServings(Number(value)))}
+            size="sm"
+            variant="chips"
+          />
+        </div>
+
+        {/* Below the dose row so the button being pressed never moves when this appears. */}
+        <CapacityNotice dripper={dripper} doseG={dose} />
+
+        {iced && <IcedGuide iceG={scaled.iceG} />}
+
+        <div className="flex items-center gap-3 border-t pt-4">
+          <span className="text-xs font-medium text-muted-foreground">비율</span>
+          <NumberStepper
+            label="비율"
+            value={targetRatio}
+            onChange={setTargetRatio}
+            prefix="1:"
+            size="sm"
+            {...widenLimits(RATIO_LIMITS, ratio)}
+          />
         </div>
         <Link href={brewHref} className={cn(buttonVariants({ size: "lg" }), "h-12 text-base")}>
           <Play aria-hidden />이 설정으로 추출 시작
