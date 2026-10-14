@@ -35,8 +35,9 @@ test("login → create a recipe → brew it", async ({ page }) => {
   await expect(page.getByRole("article").getByTestId("step-cumulative")).toHaveText(["30g", "200g", "320g"]);
   await expect(page.getByRole("link", { name: "수정", exact: true })).toBeVisible();
 
-  await page.getByRole("link", { name: "이 설정으로 추출 시작" }).click();
+  await page.getByRole("link", { name: "추출하기" }).click();
   await expect(page).toHaveURL(/\/brew$/);
+  await page.getByRole("button", { name: "추출 시작" }).click();
   await expect(page.getByTestId("brew-step")).toHaveText("뜸 들이기");
   await expect(page.getByTestId("brew-target")).toHaveText("30");
 

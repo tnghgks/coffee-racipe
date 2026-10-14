@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { brewEndS, getBrewProgress } from "./progress";
+import { brewEndS, brewSegments, getBrewProgress } from "./progress";
 
 // Seed: "V60 기본 1인분" — pours at 0:00, 0:40, 1:10, 1:40; ends at 2:45
 const steps = [
@@ -82,5 +82,33 @@ describe("getBrewProgress", () => {
 
   it("clamps negative elapsed time", () => {
     expect(getBrewProgress(steps, TOTAL, -5).currentIndex).toBe(0);
+  });
+});
+
+describe("brewSegments", () => {
+  it("splits the brew into one segment per step", () => {
+    const segments = brewSegments(steps, TOTAL);
+    expect(segments.map((s) => s.index)).toEqual([0, 1, 2, 3]);
+    expect(segments[0]).toEqual({ index: 0, from: 0, to: 40 / 165 });
+    expect(segments[3].from).toBeCloseTo(100 / 165);
+    expect(segments[3].to).toBe(1);
+  });
+
+  it("adds a leading wait when the first step starts late", () => {
+    expect(brewSegments([{ startAtS: 10 }, { startAtS: 30 }], 40)).toEqual([
+      { index: -1, from: 0, to: 0.25 },
+      { index: 0, from: 0.25, to: 0.75 },
+      { index: 1, from: 0.75, to: 1 },
+    ]);
+  });
+
+  it("drops zero-length segments for steps sharing a start time", () => {
+    const segments = brewSegments([{ startAtS: 0 }, { startAtS: 30 }, { startAtS: 30 }], 60);
+    expect(segments.map((s) => s.index)).toEqual([0, 2]);
+  });
+
+  it("handles no steps and no time", () => {
+    expect(brewSegments([], 60)).toEqual([{ index: -1, from: 0, to: 1 }]);
+    expect(brewSegments([], 0)).toEqual([]);
   });
 });

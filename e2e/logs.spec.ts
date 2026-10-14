@@ -10,7 +10,7 @@ const RECIPE_ID = "00000000-0000-4000-8000-000000000003";
 async function finishBrew(page: Page, query = "?dose=20") {
   await page.clock.install();
   await page.goto(`/recipes/${RECIPE_ID}/brew${query}`);
-  await page.getByRole("button", { name: "시작" }).click();
+  await page.getByRole("button", { name: "추출 시작" }).click();
   await page.clock.fastForward(170_000);
   await page.clock.runFor(100);
   await expect(page.getByRole("heading", { name: "추출 완료" })).toBeVisible();
@@ -43,7 +43,7 @@ test("a rating is required", async ({ page }) => {
   await expect(page).toHaveURL(/\/me\/logs\/new/);
 });
 
-test("the last 'next time' note shows on the recipe page", async ({ page }) => {
+test("the last 'next time' note shows when dialing in the next brew", async ({ page }) => {
   await signUpAs(page, `/me/logs/new?recipe=${RECIPE_ID}`);
   await page.getByRole("radio", { name: "3점" }).click();
   await page.getByLabel("원두 이름").fill("케냐 AA");
@@ -51,8 +51,10 @@ test("the last 'next time' note shows on the recipe page", async ({ page }) => {
   await page.getByRole("button", { name: "기록 저장" }).click();
   await expect(page).toHaveURL(/\/me\/logs$/);
 
-  await page.goto(`/recipes/${RECIPE_ID}`);
+  await page.goto(`/recipes/${RECIPE_ID}/brew`);
   await expect(page.getByTestId("last-adjustment")).toContainText("분쇄도 한 칸 굵게");
+
+  await page.goto(`/recipes/${RECIPE_ID}`);
   const section = page.getByRole("region", { name: "이 레시피로 내린 내 기록" });
   await expect(section.getByTestId("log-card")).toHaveCount(1);
   await expect(section).toContainText("케냐 AA");

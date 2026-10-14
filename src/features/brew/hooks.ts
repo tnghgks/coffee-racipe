@@ -21,6 +21,30 @@ export function useAnimationFrame(onFrame: (now: number) => void, active: boolea
 
 const noopSubscribe = () => () => {};
 
+const searchListeners = new Set<() => void>();
+function subscribeToSearch(listener: () => void) {
+  searchListeners.add(listener);
+  window.addEventListener("popstate", listener);
+  return () => {
+    searchListeners.delete(listener);
+    window.removeEventListener("popstate", listener);
+  };
+}
+const readSearch = () => window.location.search;
+
+/**
+ * The page's query string, null during SSR/hydration. `replaceSearch` rewrites it in place (no history
+ * entry, no navigation) and re-renders every reader.
+ */
+export function useLocationSearch(): [search: string | null, replaceSearch: (search: string) => void] {
+  const search = useSyncExternalStore(subscribeToSearch, readSearch, () => null);
+  const replaceSearch = (next: string) => {
+    window.history.replaceState(null, "", `${window.location.pathname}${next}`);
+    for (const listener of searchListeners) listener();
+  };
+  return [search, replaceSearch];
+}
+
 /** null during SSR/hydration, then whether the Screen Wake Lock API exists. */
 export function useWakeLockSupported(): boolean | null {
   return useSyncExternalStore(

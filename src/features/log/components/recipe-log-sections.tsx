@@ -9,7 +9,7 @@ import { LogCard } from "./log-card";
 // Recipe page sections built from the viewer's own logs. Both read the session: render inside <Suspense>.
 // Signed-out visitors (and users without logs for this recipe) see nothing.
 
-/** The last "next time" note, shown above the calculator so it's seen before brewing again. */
+/** The last "next time" note, shown on the brew prep view so it's seen while dialing in the next brew. */
 export async function LastAdjustmentNote({ recipeId }: { recipeId: string }) {
   const last = await getLastAdjustment(recipeId);
   if (!last) return null;
