@@ -39,18 +39,27 @@ export async function getReactionState(recipeId: string): Promise<(ReactionState
 }
 
 /** The viewer's saved recipes, newest save first. Recipes that became private or were deleted drop out. */
-export async function listSavedRecipes(): Promise<RecipeSummary[]> {
+export async function listSavedRecipes(limit = 200): Promise<RecipeSummary[]> {
+  return listReactedRecipes("recipe_saves", limit);
+}
+
+/** The viewer's liked recipes, newest like first. */
+export async function listLikedRecipes(limit = 200): Promise<RecipeSummary[]> {
+  return listReactedRecipes("recipe_likes", limit);
+}
+
+async function listReactedRecipes(table: "recipe_saves" | "recipe_likes", limit: number): Promise<RecipeSummary[]> {
   const user = await getCurrentUser();
   if (!user) return [];
 
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("recipe_saves")
+    .from(table)
     .select(`created_at, recipes(${summaryColumns})`)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(200);
-  if (error) throw new Error(`Failed to load saved recipes: ${error.message}`);
+    .limit(limit);
+  if (error) throw new Error(`Failed to load ${table}: ${error.message}`);
   // RLS hides recipes the viewer can no longer see; the embed is then null.
   return data.flatMap((row) => (row.recipes ? [toSummary(row.recipes)] : []));
 }

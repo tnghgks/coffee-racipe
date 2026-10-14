@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 
 import { useHydrated } from "@/components/common/hydration-guard";
+import { formatCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 import { setReaction } from "../actions";
@@ -78,7 +79,7 @@ export function ReactionButtons({ recipeId, initial, loginHref, pending = false 
               <Icon className={cn("size-4", active && "fill-current")} aria-hidden />
               {label}
               <span className="tabular-nums" data-testid={`${kind}-count`}>
-                {count}
+                {formatCount(count)}
               </span>
             </>
           );

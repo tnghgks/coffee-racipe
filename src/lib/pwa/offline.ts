@@ -11,6 +11,8 @@ export const CACHES = {
   pages: `pages-${CACHE_VERSION}`,
   /** Icons, manifest, the offline page. */
   shell: `shell-${CACHE_VERSION}`,
+  /** Optimized recipe photos (/_next/image?url=/images/…): cache-first, any width offline. */
+  images: `images-${CACHE_VERSION}`,
 } as const;
 
 export const OFFLINE_PATH = "/offline";
@@ -19,6 +21,7 @@ export const SHELL_URLS = [OFFLINE_PATH, "/manifest.webmanifest", "/icons/icon-1
 /** How many pages and build files to keep (oldest dropped first). */
 export const PAGE_LIMIT = 80;
 export const STATIC_LIMIT = 400;
+export const IMAGE_LIMIT = 120;
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const CACHEABLE_PAGES = [
@@ -35,13 +38,14 @@ export function isCacheablePage(pathname: string): boolean {
   return CACHEABLE_PAGES.some((re) => re.test(pathname));
 }
 
-export type RequestKind = "static" | "page" | "rsc" | "shell" | "bypass";
+export type RequestKind = "static" | "image" | "page" | "rsc" | "shell" | "bypass";
 
 type RequestInfo = { method: string; url: URL; origin: string; mode: string; isRsc: boolean };
 
 export function classifyRequest({ method, url, origin, mode, isRsc }: RequestInfo): RequestKind {
   if (method !== "GET" || url.origin !== origin) return "bypass";
   if (url.pathname.startsWith("/_next/static/")) return "static";
+  if (recipeImageSource(url)) return "image";
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) return "bypass";
   // Client-side navigations fetch an RSC payload instead of HTML.
   if (isRsc) return "rsc";
@@ -66,6 +70,44 @@ export function extractAssetPaths(html: string): string[] {
   for (const match of html.matchAll(/\/_next\/static\/[^"'\s\\)<>]+/g)) found.add(match[0]);
   for (const match of html.matchAll(/(?<![\w/])static\/(?:chunks|css|media)\/[^"'\s\\)<>]+/g)) found.add(`/_next/${match[0]}`);
   return [...found].filter((path) => !path.endsWith(".map"));
+}
+
+/** The /images/… file an optimized-image URL (/_next/image?url=…&w=…&q=…) serves, or null for anything else. */
+export function recipeImageSource(url: URL): string | null {
+  if (url.pathname !== "/_next/image") return null;
+  const source = url.searchParams.get("url");
+  return source?.startsWith("/images/") ? source : null;
+}
+
+const imageWidth = (url: URL) => Number(url.searchParams.get("w")) || 0;
+
+/** Width to keep offline: enough for a full-width phone photo without fetching every srcset entry. */
+const OFFLINE_IMAGE_WIDTH = 640;
+
+/**
+ * Recipe photos a page shows, one URL per photo (from img srcset/src and preload links, HTML-escaped):
+ * the smallest width of at least 640px, or the largest offered. Offline, any cached width is served.
+ */
+export function extractImagePaths(html: string, origin = "http://localhost"): string[] {
+  const bySource = new Map<string, URL[]>();
+  for (const match of html.matchAll(/\/_next\/image\?[^"'\s,<>]+/g)) {
+    const url = new URL(match[0].replace(/&amp;/g, "&"), origin);
+    const source = recipeImageSource(url);
+    if (source) bySource.set(source, [...(bySource.get(source) ?? []), url]);
+  }
+  return [...bySource.values()].map((urls) => {
+    const sorted = urls.sort((a, b) => imageWidth(a) - imageWidth(b));
+    const pick = sorted.find((url) => imageWidth(url) >= OFFLINE_IMAGE_WIDTH) ?? sorted.at(-1)!;
+    return pick.pathname + pick.search;
+  });
+}
+
+/** Offline stand-in for an image request: the widest cached copy of the same photo. */
+export function imageFallback(requested: URL, cached: URL[]): URL | null {
+  const source = recipeImageSource(requested);
+  if (!source) return null;
+  const same = cached.filter((url) => recipeImageSource(url) === source);
+  return same.sort((a, b) => imageWidth(b) - imageWidth(a))[0] ?? null;
 }
 
 /** Title of a cached page for the offline list ("V60 울티밋 레시피 · 드립 커뮤니티" → "V60 울티밋 레시피"). */

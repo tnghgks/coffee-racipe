@@ -12,6 +12,7 @@ import { LastAdjustmentNote, MyRecipeLogs } from "@/features/log/components/reci
 import { OfficialBadge } from "@/features/recipe/components/official-badge";
 import { ForkLink, ForkOrigin, RecipeActions } from "@/features/recipe/components/recipe-actions";
 import { RecipeCalculator } from "@/features/recipe/components/recipe-calculator";
+import { RecipeImage } from "@/features/recipe/components/recipe-image";
 import { SourceCredit } from "@/features/recipe/components/source-credit";
 import { VisibilityBadge } from "@/features/recipe/components/visibility-badge";
 import { dripperLabel } from "@/features/recipe/dripper";
@@ -58,6 +59,13 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
           <ChevronLeft className="size-4" aria-hidden />
           레시피 목록
         </Link>
+
+        <RecipeImage
+          recipe={recipe}
+          sizes="(min-width: 672px) 672px, 100vw"
+          preload
+          className="aspect-video max-h-80 w-full rounded-2xl"
+        />
 
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

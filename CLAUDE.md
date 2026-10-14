@@ -39,7 +39,8 @@ Serwist는 쓰지 않는다 (Phase 6-A): Turbopack 연동(@serwist/turbopack)이
 src/app/            루트 layout은 html/body/폰트만. 라우트는 그룹으로 나눈다 (URL에는 안 나옴)
 src/app/(main)/     헤더·하단 내비가 있는 일반 화면
 src/app/(focus)/    헤더·내비 없는 전체 화면 (추출 모드 /recipes/[id]/brew)
-src/features/<도메인>/  recipe, brew, log, community — components, actions.ts, schema.ts, queries.ts
+src/features/<도메인>/  recipe, brew, log, community, home(홈 화면 조합) — components, actions.ts, schema.ts, queries.ts
+public/images/      레시피 사진 (recipes/<공식 id>.webp, drippers/<slug>.webp). docs/recipe-images.md
 src/components/ui/  shadcn 컴포넌트 (pnpm dlx shadcn@latest add <name>)
 src/components/layout/  헤더, 모바일 하단 내비
 src/components/common/  여러 도메인이 쓰는 컴포넌트 (NumberStepper 등)
@@ -172,6 +173,16 @@ e2e/                Playwright 테스트
 - 한글 폰트(Noto Sans KR)는 글자 범위별로 쪼개져 필요할 때만 받는다. 오프라인에서 처음 쓰는 글자는 시스템 폰트로 보인다 (전부 미리 받으면 수 MB).
 - 설치 배너: 추출 시작 2회 후 한 번만 (localStorage). Chrome은 `beforeinstallprompt`를 잡아 두었다가 "설치" 버튼, iOS는 "공유 → 홈 화면에 추가" 안내.
 - E2E: `e2e/pwa.spec.ts`는 Playwright `pwa` 프로젝트가 `pnpm build && pnpm start --port 3100`에서 돌린다 (`context.setOffline`). 이미 띄워 둔 서버를 쓰려면 `PLAYWRIGHT_PWA_URL`. 오프라인 테스트처럼 예상된 콘솔 에러는 `test.use({ allowConsoleError: /…/ })` (배열은 Playwright가 튜플로 읽어서 RegExp 하나).
+- 레시피 사진(`/_next/image?url=/images/…`)은 별도 캐시(120개) cache-first. 페이지를 미리 받을 때 사진마다 한 폭(640 이상 중 가장 작은 것)만 받고, 오프라인에서는 같은 사진의 캐시된 아무 폭이나 준다 (`extractImagePaths`·`imageFallback`).
+
+### 홈·레시피 사진 (refactor/home-layout에서 정함)
+- 홈 = 위쪽(세션) + 인기·신규(공개, 캐시). 위쪽은 비로그인이면 히어로, 로그인이면 인사 + "지난번에 내린 레시피"(`getLastBrew`) + 저장/좋아요 탭. 각각 Suspense.
+- 인기·신규는 `/explore` 첫 페이지(`exploreRecipes`)를 그대로 잘라 쓴다 → 순위가 탐색 화면과 같고 캐시도 공유한다.
+- "다시 추출"은 로그의 원두량·물·아이스를 `brewSettingsFromLog`로 바꾼다. 로그는 g만 저장하므로 물이 레시피 비율과 반올림 오차(±0.5g) 안이면 레시피 비율을 그대로 쓴다.
+- 레시피 사진은 미리 만든 정적 파일(`public/images`, `docs/recipe-images.md`의 프롬프트로 imagen 생성). 공식 레시피는 자기 사진, 나머지는 드리퍼 사진, 모르는 드리퍼는 `default`. 매핑은 `features/recipe/images.ts`. **공식 레시피·드리퍼를 추가하면 사진도 추가**한다 (단위 테스트가 파일 존재와 seed의 드리퍼 slug를 확인).
+- `next.config.ts`의 `images.localPatterns`는 `/images/**`만 허용한다.
+- 좋아요·저장 수는 `formatCount`로 줄여 쓴다 ("1.2천", "1.2만").
+- 가로 스크롤 목록 안에 `sr-only`(absolute)가 있으면 스크롤 컨테이너에 `relative`를 준다. 안 그러면 기준 위치가 바깥이라 페이지 폭이 늘어난다 (모바일에서 가로 스크롤).
 
 ### 저장소·배포
 - GitHub `tnghgks/coffee-racipe`. Phase 하나 = 브랜치(`phase-N`) 하나 = PR 하나, base는 `main`.

@@ -6,6 +6,9 @@ import {
   CACHES,
   classifyRequest,
   extractAssetPaths,
+  extractImagePaths,
+  IMAGE_LIMIT,
+  imageFallback,
   isCacheablePage,
   isFresh,
   OFFLINE_PATH,
@@ -55,6 +58,9 @@ self.addEventListener("fetch", (event) => {
     case "static":
       event.respondWith(cacheFirst(request, CACHES.static, STATIC_LIMIT));
       return;
+    case "image":
+      event.respondWith(cachedImage(request, url));
+      return;
     case "shell":
       event.respondWith(cacheFirst(request, CACHES.shell));
       return;
@@ -87,6 +93,25 @@ async function cacheFirst(request: Request, cacheName: string, limit?: number): 
     if (limit) await trim(cache, limit);
   }
   return response;
+}
+
+/** Recipe photos: the exact width when cached or online; offline, any cached width of the same photo. */
+async function cachedImage(request: Request, url: URL): Promise<Response> {
+  const cache = await caches.open(CACHES.images);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      await cache.put(request, response.clone());
+      await trim(cache, IMAGE_LIMIT);
+    }
+    return response;
+  } catch {
+    const keys = await cache.keys();
+    const fallback = imageFallback(url, keys.map((key) => new URL(key.url)));
+    return (fallback && (await cache.match(fallback.toString()))) ?? Response.error();
+  }
 }
 
 /** Fresh HTML when online (kept for later); the cached copy, then the offline page, when not. */
@@ -129,6 +154,7 @@ async function cachePages(urls: string[]): Promise<void> {
       const html = await response.clone().text();
       await storePage(url.pathname, response);
       await cacheAssets(extractAssetPaths(html));
+      await cacheImages(extractImagePaths(html, self.location.origin));
     } catch {
       // offline or failed: keep whatever is cached
     }
@@ -149,6 +175,20 @@ async function cacheAssets(paths: string[]): Promise<void> {
     }),
   );
   await trim(cache, STATIC_LIMIT);
+}
+
+async function cacheImages(paths: string[]): Promise<void> {
+  const cache = await caches.open(CACHES.images);
+  for (const path of paths) {
+    if (await cache.match(path)) continue;
+    try {
+      const response = await fetch(path);
+      if (response.ok) await cache.put(path, response);
+    } catch {
+      // skip; fetched (and cached) on first use online
+    }
+  }
+  await trim(cache, IMAGE_LIMIT);
 }
 
 /** Pages are keyed by path (no query): /recipes/x/brew?dose=20 is served by the cached /recipes/x/brew. */

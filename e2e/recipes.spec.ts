@@ -116,12 +116,23 @@ test("stepping into decimals does not shift the layout", async ({ page }) => {
   const ratioUp = page.getByRole("button", { name: "비율 0.5 늘리기" });
   const arrowRow = page.getByTestId("brew-water");
 
-  const before = await Promise.all([doseUp.boundingBox(), ratioUp.boundingBox(), arrowRow.boundingBox()]);
+  // Page coordinates: clicking scrolls the calculator into view, which moves viewport boxes.
+  const boxes = () =>
+    Promise.all(
+      [doseUp, ratioUp, arrowRow].map((locator) =>
+        locator.evaluate((el) => {
+          const rect = el.getBoundingClientRect();
+          return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: rect.width, height: rect.height };
+        }),
+      ),
+    );
+
+  const before = await boxes();
   await doseUp.click(); // 15 → 15.5
   await ratioUp.click(); // 16 → 16.5
   await expect(page.getByRole("textbox", { name: "원두량" })).toHaveValue("15.5");
   await expect(page.getByRole("textbox", { name: "비율" })).toHaveValue("16.5");
-  const after = await Promise.all([doseUp.boundingBox(), ratioUp.boundingBox(), arrowRow.boundingBox()]);
+  const after = await boxes();
 
   expect(after).toEqual(before);
 });
