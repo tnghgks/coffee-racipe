@@ -45,6 +45,9 @@ test("a saved recipe opens and brews in airplane mode", async ({ page, context }
   await page.getByTestId("saved-recipe-list").getByRole("link", { name: new RegExp(RECIPE_TITLE) }).click();
   await expect(page).toHaveURL(`/recipes/${RECIPE_ID}`);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(RECIPE_TITLE);
+  // The photo was kept with the page (one width; offline any cached width is served).
+  const photo = page.getByRole("article").locator("img").first();
+  await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
 
   await page.getByRole("link", { name: /추출 시작/ }).click();
   await expect(page).toHaveURL(new RegExp(`/recipes/${RECIPE_ID}/brew`));

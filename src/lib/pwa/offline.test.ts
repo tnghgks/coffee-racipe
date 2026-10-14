@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyRequest, extractAssetPaths, isCacheablePage, isFresh, pageTitle, recipeOfflineUrls } from "./offline";
+import {
+  classifyRequest,
+  extractAssetPaths,
+  extractImagePaths,
+  imageFallback,
+  isCacheablePage,
+  isFresh,
+  pageTitle,
+  recipeOfflineUrls,
+} from "./offline";
 
 const origin = "https://drip.example";
 const req = (path: string, overrides: Partial<Parameters<typeof classifyRequest>[0]> = {}) =>
@@ -78,5 +87,35 @@ describe("isFresh", () => {
 describe("recipeOfflineUrls", () => {
   it("covers the detail page and brew mode", () => {
     expect(recipeOfflineUrls(id)).toEqual([`/recipes/${id}`, `/recipes/${id}/brew`]);
+  });
+});
+
+describe("recipe images", () => {
+  const image = (source: string, w: number) => `/_next/image?url=${encodeURIComponent(source)}&w=${w}&q=75`;
+  const v60 = "/images/drippers/v60.webp";
+  const official = `/images/recipes/${id}.webp`;
+
+  it("caches optimized recipe photos only", () => {
+    expect(req(image(v60, 640))).toBe("image");
+    expect(req(image("/icons/icon-192.png", 64))).toBe("bypass");
+    expect(req(`/_next/image?url=${encodeURIComponent("https://lh3.googleusercontent.com/a.png")}&w=64&q=75`)).toBe("bypass");
+  });
+
+  it("keeps one width per photo from srcset and preload links", () => {
+    const srcset = (source: string, widths: number[]) =>
+      widths.map((w) => `${image(source, w).replace(/&/g, "&amp;")} ${w}w`).join(", ");
+    const html = `
+      <link rel="preload" as="image" imageSrcSet="${srcset(official, [640, 750, 1080])}"/>
+      <img srcSet="${srcset(official, [640, 750, 1080])}" src="${image(official, 1080).replace(/&/g, "&amp;")}"/>
+      <img srcSet="${srcset(v60, [64, 128])}" src="${image(v60, 128).replace(/&/g, "&amp;")}"/>
+      <img src="/_next/image?url=%2Ficons%2Fa.png&amp;w=64&amp;q=75"/>`;
+    expect(extractImagePaths(html).sort()).toEqual([image(official, 640), image(v60, 128)].sort());
+  });
+
+  it("serves the widest cached copy of the same photo offline", () => {
+    const at = (path: string) => new URL(path, origin);
+    const cached = [at(image(v60, 128)), at(image(official, 640)), at(image(v60, 640))];
+    expect(imageFallback(at(image(v60, 828)), cached)?.toString()).toBe(at(image(v60, 640)).toString());
+    expect(imageFallback(at(image("/images/drippers/chemex.webp", 640)), cached)).toBeNull();
   });
 });

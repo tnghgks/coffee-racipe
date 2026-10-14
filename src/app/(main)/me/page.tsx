@@ -1,4 +1,4 @@
-import { BookOpen, Bookmark, ChevronRight, NotebookPen, Pencil } from "lucide-react";
+import { BookOpen, Bookmark, ChevronRight, Heart, NotebookPen, Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -11,6 +11,7 @@ export const metadata: Metadata = { title: "내 정보", robots: { index: false 
 const links = [
   { href: "/me/recipes", label: "내 레시피", icon: BookOpen, soon: null },
   { href: "/me/saved", label: "저장한 레시피", icon: Bookmark, soon: null },
+  { href: "/me/liked", label: "좋아요한 레시피", icon: Heart, soon: null },
   { href: "/me/logs", label: "브루 로그", icon: NotebookPen, soon: null },
 ];
 

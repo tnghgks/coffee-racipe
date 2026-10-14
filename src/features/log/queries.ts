@@ -3,10 +3,13 @@ import "server-only";
 import { cache } from "react";
 
 import { getCurrentUser } from "@/features/auth/queries";
-import { isUuid } from "@/features/recipe/mappers";
+import type { BrewSettings } from "@/features/brew/settings";
+import { isUuid, summaryColumns, toSummary } from "@/features/recipe/mappers";
+import type { RecipeSummary } from "@/features/recipe/types";
 import type { Tables } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 
+import { brewSettingsFromLog } from "./prefill";
 import type { RoastLevel } from "./schema";
 
 // Brew logs are private (RLS: owner only), so every read uses the session client and is never cached.
@@ -106,6 +109,38 @@ export async function getMyLogFilterOptions() {
 export const listMyLogsForRecipe = cache(async (recipeId: string, limit = 3) =>
   listMyLogs({ bean: null, recipeId }, limit),
 );
+
+export type LastBrew = {
+  recipe: RecipeSummary;
+  /** How it was brewed, to brew it the same way again. */
+  settings: BrewSettings;
+  brewedAt: string;
+};
+
+/**
+ * The latest log whose recipe the user can still see (deleted or now-private recipes are skipped:
+ * RLS nulls the embed), for the home page's "brew it again" card.
+ */
+export async function getLastBrew(): Promise<LastBrew | null> {
+  if (!(await getCurrentUser())) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("brew_logs")
+    .select(`dose_g, water_g, iced, brewed_at, recipes(${summaryColumns})`)
+    .not("recipe_id", "is", null)
+    .order("brewed_at", { ascending: false })
+    .limit(10);
+  if (error) throw new Error(`Failed to load last brew: ${error.message}`);
+
+  const row = data.find((log) => log.recipes);
+  if (!row?.recipes) return null;
+  const recipe = toSummary(row.recipes);
+  return {
+    recipe,
+    settings: brewSettingsFromLog({ doseG: row.dose_g, waterG: row.water_g, iced: row.iced }, recipe),
+    brewedAt: row.brewed_at,
+  };
+}
 
 /** The most recent "next time" note left for this recipe, shown before brewing it again. */
 export const getLastAdjustment = cache(async (recipeId: string) => {

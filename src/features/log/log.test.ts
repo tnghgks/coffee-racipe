@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { formatBrewedAt } from "./format";
-import { emptyLogForm, logDefaultsFromQuery, newLogHref, type RecipeDefaults } from "./prefill";
+import { brewSettingsFromLog, emptyLogForm, logDefaultsFromQuery, newLogHref, type RecipeDefaults } from "./prefill";
 import { logFormSchema, logToRow } from "./schema";
 
 const recipe: RecipeDefaults = {
@@ -48,6 +48,36 @@ describe("brew → log handoff", () => {
 
   it("works without a recipe", () => {
     expect(logDefaultsFromQuery({}, null)).toMatchObject({ recipeId: null, doseG: 15, waterG: 240, totalTime: "" });
+  });
+});
+
+describe("log → brew again", () => {
+  const ultimate = { doseG: 30, ratio: 16.667 };
+
+  it("keeps the recipe ratio when the water matches it (grams are rounded)", () => {
+    // 18 × 16.667 = 300.006 → logged as 300g
+    expect(brewSettingsFromLog({ doseG: 18, waterG: 300, iced: false }, ultimate)).toEqual({
+      doseG: 18,
+      ratio: 16.667,
+      iced: false,
+    });
+  });
+
+  it("derives the ratio from the logged water otherwise, iced included", () => {
+    expect(brewSettingsFromLog({ doseG: 20, waterG: 300, iced: true }, ultimate)).toEqual({
+      doseG: 20,
+      ratio: 15,
+      iced: true,
+    });
+    expect(brewSettingsFromLog({ doseG: 15, waterG: 248, iced: false }, recipe)).toMatchObject({ ratio: 16.5 });
+  });
+
+  it("falls back to the recipe for out-of-range values", () => {
+    expect(brewSettingsFromLog({ doseG: 150, waterG: 300, iced: false }, recipe)).toEqual({
+      doseG: 15,
+      ratio: 16,
+      iced: false,
+    });
   });
 });
 

@@ -1,3 +1,4 @@
+import { parseBrewSettings, type BrewSettings } from "@/features/brew/settings";
 import { formatSeconds, roundGrams } from "@/lib/brew";
 
 import type { LogFormInput } from "./schema";
@@ -84,4 +85,18 @@ export function logDefaultsFromQuery(query: RawSearchParams, recipe: RecipeDefau
     waterTempC: recipe?.waterTempC ?? Number.NaN,
     totalTime: time ? formatSeconds(time) : "",
   };
+}
+
+/**
+ * Log → brew mode ("brew it again"): the settings a past log was brewed with. Logs store grams, not the
+ * ratio, so water within rounding of the recipe's ratio means the recipe ratio was used as-is.
+ * Out-of-range values fall back to the recipe's, like the brew query string.
+ */
+export function brewSettingsFromLog(
+  log: { doseG: number; waterG: number; iced: boolean },
+  recipe: { doseG: number; ratio: number },
+): BrewSettings {
+  const ratio =
+    Math.abs(log.doseG * recipe.ratio - log.waterG) <= 0.5 ? recipe.ratio : Number((log.waterG / log.doseG).toFixed(1));
+  return parseBrewSettings({ dose: String(log.doseG), ratio: String(ratio), iced: log.iced ? "1" : undefined }, recipe);
 }
