@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, NotebookPen, RotateCcw, Snowflake, Square, X } from "lucide-react";
+import { Check, NotebookPen, RotateCcw, Square, X } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { useStore } from "zustand";
 
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { recordBrewStarted } from "@/features/pwa/client";
 import type { RecipeDetail } from "@/features/recipe/types";
 import {
   brewEndS,
+  brewSegments,
   cueSnapshot,
   DEFAULT_ICE_SHARE,
   detectCues,
@@ -25,36 +26,41 @@ import {
 import { cn } from "@/lib/utils";
 
 import { createBeeper, vibrate } from "../feedback";
-import { useAnimationFrame, useWakeLock, useWakeLockSupported } from "../hooks";
+import { useAnimationFrame, useLocationSearch, useWakeLock, useWakeLockSupported } from "../hooks";
 import { brewSettingsQuery, parseBrewSettings, type BrewSettings } from "../settings";
 import { createBrewStore } from "../store";
 
-type BrewScreenProps = {
-  recipe: Pick<RecipeDetail, "id" | "title" | "doseG" | "ratio" | "totalTimeS" | "steps">;
-  settings: BrewSettings;
-};
+import { BrewPrep } from "./brew-prep";
+import { BrewRing } from "./brew-ring";
 
-const noSubscription = () => () => {};
-const readSearch = () => window.location.search;
+type BrewScreenProps = {
+  recipe: Pick<
+    RecipeDetail,
+    "id" | "title" | "doseG" | "ratio" | "totalTimeS" | "steps" | "dripper" | "waterTempC" | "grindText"
+  >;
+  settings: BrewSettings;
+  /** Shown on the prep view: the viewer's last "next time" note (a server component in Suspense). */
+  note?: ReactNode;
+};
 
 /** Re-render at ~10fps; cues and completion are still checked on every frame. */
 const RENDER_INTERVAL_MS = 100;
 
 const statusHint = {
-  idle: "화면을 탭해서 시작",
   running: "탭하면 일시정지",
   paused: "일시정지됨 · 탭해서 계속",
-  finished: "",
 } as const;
 
-export function BrewScreen({ recipe, settings: serverSettings }: BrewScreenProps) {
-  // Offline, the service worker serves this page from a copy cached without the query string, so the
-  // server-parsed settings may be the recipe defaults. In the browser the URL is the source of truth.
-  const search = useSyncExternalStore(noSubscription, readSearch, () => null);
+export function BrewScreen({ recipe, settings: serverSettings, note }: BrewScreenProps) {
+  // The URL is the source of truth: the prep view rewrites it in place, so a reload, the log prefill
+  // and the way back to the recipe all keep the settings. Offline, the service worker serves this page
+  // from a copy cached without the query string, so only the browser's URL can be trusted.
+  const [search, replaceSearch] = useLocationSearch();
   const settings = useMemo(
     () => (search === null ? serverSettings : parseBrewSettings(Object.fromEntries(new URLSearchParams(search)), recipe)),
     [search, serverSettings, recipe],
   );
+  const changeSettings = (next: BrewSettings) => replaceSearch(brewSettingsQuery(next, recipe));
   const [store] = useState(() => createBrewStore());
   const [beeper] = useState(createBeeper);
   const session = useStore(store, (s) => s.session);
@@ -72,6 +78,7 @@ export function BrewScreen({ recipe, settings: serverSettings }: BrewScreenProps
     [recipe.ratio, recipe.steps, settings],
   );
   const endMs = brewEndS(scaled.steps, recipe.totalTimeS) * 1000;
+  const segments = useMemo(() => brewSegments(scaled.steps, recipe.totalTimeS), [scaled.steps, recipe.totalTimeS]);
 
   const running = session.status === "running";
   useWakeLock(running || session.status === "paused");
@@ -102,10 +109,16 @@ export function BrewScreen({ recipe, settings: serverSettings }: BrewScreenProps
   const countdown = progress.secondsToNext !== null ? Math.ceil(progress.secondsToNext) : null;
   const recipeHref = `/recipes/${recipe.id}${brewSettingsQuery(settings, recipe)}`;
 
-  const onStageTap = () => {
-    if (session.status === "finished") return;
+  const start = () => {
     beeper.unlock(); // must happen inside the gesture for iOS
-    if (session.status === "idle") recordBrewStarted(); // install banner shows after a couple of brews
+    recordBrewStarted(); // install banner shows after a couple of brews
+    lastCue.current = null;
+    store.getState().toggle();
+  };
+
+  const onStageTap = () => {
+    if (session.status !== "running" && session.status !== "paused") return;
+    beeper.unlock();
     lastCue.current = null; // no cues for whatever was already true before the clock (re)starts
     store.getState().toggle();
   };
@@ -116,12 +129,16 @@ export function BrewScreen({ recipe, settings: serverSettings }: BrewScreenProps
     store.getState().reset();
   };
 
+  const nextSoon = running && countdown !== null && countdown <= 3;
+
   return (
     <div className="flex flex-1 flex-col">
       {/* top bar */}
       <header className="flex items-center gap-2 px-2 pt-2">
         <Link
           href={recipeHref}
+          // Next keeps this page alive (hidden) after leaving; without a reset, coming back resumes the old brew.
+          onClick={restart}
           aria-label="추출 그만두고 레시피로"
           className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "size-12 shrink-0")}
         >
@@ -147,19 +164,23 @@ export function BrewScreen({ recipe, settings: serverSettings }: BrewScreenProps
           <span className="size-12 shrink-0" aria-hidden />
         )}
       </header>
-      <div className="mx-4 mt-2 h-1 overflow-hidden rounded-full bg-muted" aria-hidden>
-        <div
-          className="h-full bg-primary transition-[width] duration-100 ease-linear"
-          style={{ width: `${progress.overallProgress * 100}%` }}
-        />
-      </div>
 
-      {session.status === "finished" ? (
+      {session.status === "idle" ? (
+        <BrewPrep
+          recipe={recipe}
+          settings={settings}
+          scaled={scaled}
+          onChange={changeSettings}
+          onStart={start}
+          note={note}
+        />
+      ) : session.status === "finished" ? (
         <FinishedView
           elapsedS={elapsedS}
           brewWaterG={scaled.brewWaterG}
           iceG={scaled.iceG}
           recipeHref={recipeHref}
+          onLeave={restart}
           logHref={newLogHref({
             recipeId: recipe.id,
             doseG: settings.doseG,
@@ -171,52 +192,59 @@ export function BrewScreen({ recipe, settings: serverSettings }: BrewScreenProps
         />
       ) : (
         <>
-          {/* stage: the whole area is the start/pause control */}
+          {/* stage: the whole area is the pause/resume control */}
           <button
             type="button"
             onClick={onStageTap}
-            aria-label={session.status === "running" ? "일시정지" : session.status === "paused" ? "계속" : "시작"}
-            className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-8 text-center outline-none select-none focus-visible:bg-accent/40"
+            aria-label={running ? "일시정지" : "계속"}
+            className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-6 text-center outline-none select-none focus-visible:bg-accent/40"
           >
-            <span
-              className={cn("text-sm font-medium", session.status === "paused" ? "text-primary" : "text-muted-foreground")}
-            >
+            <span className={cn("text-sm font-medium", running ? "text-muted-foreground" : "text-primary")}>
               {statusHint[session.status]}
             </span>
 
-            <span className="text-7xl font-bold tracking-tight tabular-nums" data-testid="brew-elapsed">
-              {formatSeconds(elapsedS)}
-            </span>
-
-            {step && (
-              <span className="flex w-full max-w-sm flex-col items-center gap-3">
-                <span className="text-2xl font-semibold" data-testid="brew-step">
-                  {step.label}
-                </span>
-                <span className="flex items-baseline gap-1 tabular-nums">
-                  <span className="text-6xl font-bold text-primary" data-testid="brew-target">
-                    {step.cumulativeWaterG}
+            <BrewRing
+              segments={segments}
+              currentIndex={progress.currentIndex}
+              progress={progress.overallProgress}
+              paused={!running}
+              pulse={nextSoon}
+            >
+              {step && (
+                <>
+                  <span className="text-lg font-semibold sm:text-xl" data-testid="brew-step">
+                    {step.label}
                   </span>
-                  <span className="text-xl text-muted-foreground">g까지</span>
-                </span>
-                {step.pourWaterG > 0 && (
-                  <span className="text-base text-muted-foreground tabular-nums">이번에 +{step.pourWaterG}g 붓기</span>
-                )}
-                <span className="mt-1 block h-2 w-full overflow-hidden rounded-full bg-muted" aria-hidden>
+                  {/* re-keyed per step so the new target animates in */}
                   <span
-                    className="block h-full rounded-full bg-primary transition-[width] duration-100 ease-linear"
-                    style={{ width: `${progress.stepProgress * 100}%` }}
-                  />
-                </span>
+                    key={step.position}
+                    className="flex items-baseline gap-1 tabular-nums duration-300 animate-in fade-in zoom-in-90"
+                  >
+                    <span
+                      className="text-6xl font-bold tracking-tight text-primary sm:text-7xl"
+                      data-testid="brew-target"
+                    >
+                      {step.cumulativeWaterG}
+                    </span>
+                    <span className="text-lg text-muted-foreground">g까지</span>
+                  </span>
+                </>
+              )}
+              <span className="text-lg text-muted-foreground tabular-nums">
+                <span className="font-semibold text-foreground" data-testid="brew-elapsed">
+                  {formatSeconds(elapsedS)}
+                </span>{" "}
+                / {formatSeconds(progress.endS)}
               </span>
-            )}
+            </BrewRing>
 
-            {settings.iced && session.status === "idle" && (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1.5 text-sm text-sky-900">
-                <Snowflake className="size-4" aria-hidden />
-                서버에 얼음 {scaled.iceG}g을 담고 영점을 맞추세요
-              </span>
-            )}
+            <span className="flex min-h-9 items-center">
+              {step && step.pourWaterG > 0 && (
+                <span className="rounded-full bg-secondary px-4 py-1.5 text-base text-secondary-foreground tabular-nums">
+                  이번에 +{step.pourWaterG}g 붓기
+                </span>
+              )}
+            </span>
           </button>
 
           {/* next step preview */}
@@ -231,9 +259,11 @@ export function BrewScreen({ recipe, settings: serverSettings }: BrewScreenProps
                 </span>
                 {countdown !== null && (
                   <span
+                    // re-keyed each second of the final countdown so every tick pops
+                    key={nextSoon ? countdown : "countdown"}
                     className={cn(
-                      "text-2xl font-bold tabular-nums",
-                      countdown <= 3 && running ? "text-primary" : "text-muted-foreground",
+                      "font-bold tabular-nums transition-colors",
+                      nextSoon ? "text-4xl text-primary duration-300 animate-in zoom-in-150" : "text-2xl text-muted-foreground",
                     )}
                     aria-label={`${countdown}초 남음`}
                   >
@@ -247,13 +277,13 @@ export function BrewScreen({ recipe, settings: serverSettings }: BrewScreenProps
               </span>
             )}
           </div>
-
-          {wakeLockSupported === false && (
-            <p className="mx-4 mb-4 text-center text-xs text-muted-foreground">
-              이 브라우저는 화면 꺼짐 방지를 지원하지 않아요. 추출하는 동안 화면 자동 잠금을 꺼 두세요.
-            </p>
-          )}
         </>
+      )}
+
+      {wakeLockSupported === false && session.status !== "finished" && (
+        <p className="mx-4 mb-4 text-center text-xs text-muted-foreground">
+          이 브라우저는 화면 꺼짐 방지를 지원하지 않아요. 추출하는 동안 화면 자동 잠금을 꺼 두세요.
+        </p>
       )}
     </div>
   );
@@ -266,6 +296,7 @@ function FinishedView({
   recipeHref,
   logHref,
   onRestart,
+  onLeave,
 }: {
   elapsedS: number;
   brewWaterG: number;
@@ -274,6 +305,7 @@ function FinishedView({
   /** Prefilled log form; signed-out users go through login and come back to it. */
   logHref: string;
   onRestart: () => void;
+  onLeave: () => void;
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-8 text-center">
@@ -295,7 +327,11 @@ function FinishedView({
           <RotateCcw aria-hidden />
           다시 내리기
         </Button>
-        <Link href={recipeHref} className={cn(buttonVariants({ variant: "ghost", size: "lg" }), "h-12")}>
+        <Link
+          href={recipeHref}
+          onClick={onLeave}
+          className={cn(buttonVariants({ variant: "ghost", size: "lg" }), "h-12")}
+        >
           레시피로 돌아가기
         </Link>
       </div>

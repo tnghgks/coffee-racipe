@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { BrewScreen } from "@/features/brew/components/brew-screen";
 import { parseBrewSettings } from "@/features/brew/settings";
+import { LastAdjustmentNote } from "@/features/log/components/recipe-log-sections";
 import { getRecipeForViewer } from "@/features/recipe/my-queries";
 
 export async function generateMetadata({ params }: PageProps<"/recipes/[id]/brew">): Promise<Metadata> {
@@ -16,5 +18,15 @@ export default async function BrewPage({ params, searchParams }: PageProps<"/rec
   const recipe = await getRecipeForViewer(id);
   if (!recipe) notFound();
 
-  return <BrewScreen recipe={recipe} settings={parseBrewSettings(query, recipe)} />;
+  return (
+    <BrewScreen
+      recipe={recipe}
+      settings={parseBrewSettings(query, recipe)}
+      note={
+        <Suspense>
+          <LastAdjustmentNote recipeId={recipe.id} />
+        </Suspense>
+      }
+    />
+  );
 }

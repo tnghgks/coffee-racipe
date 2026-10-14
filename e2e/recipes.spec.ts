@@ -2,6 +2,8 @@ import { expect, test } from "./fixtures";
 
 // Requires local Supabase with supabase/seed.sql applied.
 const BASIC_V60 = "/recipes/00000000-0000-4000-8000-000000000003"; // 15g, 1:16, steps 2/8/12/16
+// Dose, ratio and hot/iced are dialed in on the brew prep view.
+const BASIC_V60_BREW = `${BASIC_V60}/brew`;
 
 test("filters official recipes by dripper", async ({ page }) => {
   await page.goto("/recipes");
@@ -20,10 +22,18 @@ test("filters official recipes by dripper", async ({ page }) => {
   await expect(cards).toHaveCount(3);
 });
 
-test("rescales every step when the dose changes from 15g to 20g", async ({ page }) => {
+test("shows the recipe as written with a way into brew mode", async ({ page }) => {
   await page.goto(BASIC_V60);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("V60 기본 1인분");
   await expect(page).toHaveTitle(/V60 기본 1인분/);
+  await expect(page.getByRole("list", { name: "추출 조건" })).toContainText("원두 15g");
+  await expect(page.getByRole("list", { name: "추출 조건" })).toContainText("1:16 · 물 240g");
+  await expect(page.getByTestId("step-cumulative")).toHaveText(["30g", "120g", "180g", "240g"]);
+  await expect(page.getByRole("link", { name: "추출하기" })).toHaveAttribute("href", `${BASIC_V60}/brew`);
+});
+
+test("rescales every step when the dose changes from 15g to 20g", async ({ page }) => {
+  await page.goto(BASIC_V60_BREW);
 
   const cumulative = page.getByTestId("step-cumulative");
   const total = page.getByTestId("brew-water");
@@ -43,14 +53,14 @@ test("rescales every step when the dose changes from 15g to 20g", async ({ page 
 });
 
 test("changing the ratio stretches the steps", async ({ page }) => {
-  await page.goto(BASIC_V60);
+  await page.goto(BASIC_V60_BREW);
   await page.getByRole("textbox", { name: "비율" }).fill("15");
   await expect(page.getByTestId("brew-water")).toHaveText("225g");
   await expect(page.getByTestId("step-cumulative").last()).toHaveText("225g");
 });
 
 test("switches between hot and iced", async ({ page }) => {
-  await page.goto(BASIC_V60);
+  await page.goto(BASIC_V60_BREW);
   const serve = page.getByRole("radiogroup", { name: "온도" });
   const brewWater = page.getByTestId("brew-water");
   await expect(serve.getByRole("radio", { name: "핫" })).toBeChecked();
@@ -72,7 +82,7 @@ test("switches between hot and iced", async ({ page }) => {
 });
 
 test("picks servings and reflects manual doses", async ({ page }) => {
-  await page.goto(BASIC_V60); // 15g = 1인분
+  await page.goto(BASIC_V60_BREW); // 15g = 1인분
   const servings = page.getByRole("radiogroup", { name: "인분" });
   const dose = page.getByRole("textbox", { name: "원두량" });
   await expect(servings.getByRole("radio", { name: "1인분" })).toBeChecked();
@@ -94,7 +104,7 @@ test("picks servings and reflects manual doses", async ({ page }) => {
 });
 
 test("warns when the dose exceeds the dripper capacity", async ({ page }) => {
-  await page.goto(BASIC_V60); // Hario V60 02: up to 30g
+  await page.goto(BASIC_V60_BREW); // Hario V60 02: up to 30g
   const servings = page.getByRole("radiogroup", { name: "인분" });
   const warning = page.getByText("원두 30g까지 권장해요");
   await expect(warning).toHaveCount(0);
@@ -111,7 +121,7 @@ test("warns when the dose exceeds the dripper capacity", async ({ page }) => {
 });
 
 test("stepping into decimals does not shift the layout", async ({ page }) => {
-  await page.goto(BASIC_V60);
+  await page.goto(BASIC_V60_BREW);
   const doseUp = page.getByRole("button", { name: "원두량 0.5 늘리기" });
   const ratioUp = page.getByRole("button", { name: "비율 0.5 늘리기" });
   const arrowRow = page.getByTestId("brew-water");

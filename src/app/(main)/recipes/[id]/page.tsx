@@ -1,25 +1,27 @@
-import { Bean, ChevronLeft, Thermometer, Timer } from "lucide-react";
+import { Bean, ChevronLeft, Coffee, Droplet, Play, Thermometer, Timer } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { parseBrewSettings } from "@/features/brew/settings";
+import { buttonVariants } from "@/components/ui/button";
+import { brewSettingsQuery, parseBrewSettings } from "@/features/brew/settings";
 import { AuthorLink } from "@/features/community/components/author-link";
 import { RecipeComments } from "@/features/community/components/recipe-comments";
 import { RecipeReactions, RecipeReactionsFallback } from "@/features/community/components/recipe-reactions";
-import { LastAdjustmentNote, MyRecipeLogs } from "@/features/log/components/recipe-log-sections";
+import { MyRecipeLogs } from "@/features/log/components/recipe-log-sections";
 import { OfficialBadge } from "@/features/recipe/components/official-badge";
 import { ForkLink, ForkOrigin, RecipeActions } from "@/features/recipe/components/recipe-actions";
-import { RecipeCalculator } from "@/features/recipe/components/recipe-calculator";
 import { RecipeImage } from "@/features/recipe/components/recipe-image";
 import { SourceCredit } from "@/features/recipe/components/source-credit";
+import { StepTimeline } from "@/features/recipe/components/step-timeline";
 import { VisibilityBadge } from "@/features/recipe/components/visibility-badge";
 import { dripperLabel } from "@/features/recipe/dripper";
 import { CacheForOffline } from "@/features/pwa/components/cache-for-offline";
 import { getRecipeForViewer } from "@/features/recipe/my-queries";
-import { formatGrams, formatRatio, formatSeconds } from "@/lib/brew";
+import { formatGrams, formatRatio, formatSeconds, scaleRecipe } from "@/lib/brew";
 import { recipeOfflineUrls } from "@/lib/pwa/offline";
+import { cn } from "@/lib/utils";
 
 export async function generateMetadata({ params }: PageProps<"/recipes/[id]">): Promise<Metadata> {
   const { id } = await params;
@@ -40,8 +42,13 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
   const recipe = await getRecipeForViewer(id);
   if (!recipe) notFound();
 
-  // Dose and ratio live in the calculator; only the fixed conditions are shown here.
+  // The recipe as written; dose, ratio and hot/iced are dialed in on the brew prep view.
+  const scaled = scaleRecipe(recipe, recipe.doseG);
+  // Settings carried back from brew mode go along again, so leaving and coming back keeps them.
+  const brewHref = `/recipes/${recipe.id}/brew${brewSettingsQuery(parseBrewSettings(query, recipe), recipe)}`;
   const specs = [
+    { icon: Coffee, label: "원두", value: `원두 ${formatGrams(recipe.doseG)}` },
+    { icon: Droplet, label: "물", value: `${formatRatio(recipe.ratio)} · 물 ${scaled.brewWaterG}g` },
     recipe.waterTempC && { icon: Thermometer, label: "물 온도", value: `${recipe.waterTempC}°C` },
     { icon: Timer, label: "총 시간", value: formatSeconds(recipe.totalTimeS) },
     recipe.grindText && { icon: Bean, label: "분쇄도", value: recipe.grindText },
@@ -111,18 +118,17 @@ export default async function RecipePage({ params, searchParams }: PageProps<"/r
         </div>
       </header>
 
-      <Suspense>
-        <LastAdjustmentNote recipeId={recipe.id} />
-      </Suspense>
+      <Link href={brewHref} className={cn(buttonVariants({ size: "lg" }), "h-14 text-base")}>
+        <Play aria-hidden />
+        추출하기
+      </Link>
 
-      <RecipeCalculator
-        recipeId={recipe.id}
-        dripper={recipe.dripper}
-        doseG={recipe.doseG}
-        ratio={recipe.ratio}
-        steps={recipe.steps}
-        initial={parseBrewSettings(query, recipe)}
-      />
+      <section aria-labelledby="steps-heading" className="flex flex-col gap-4">
+        <h2 id="steps-heading" className="text-lg font-semibold">
+          단계
+        </h2>
+        <StepTimeline steps={scaled.steps} totalWaterG={scaled.brewWaterG} />
+      </section>
 
       <Suspense>
         <MyRecipeLogs recipeId={recipe.id} />

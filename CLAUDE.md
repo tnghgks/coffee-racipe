@@ -83,7 +83,7 @@ e2e/                Playwright 테스트
 - Phase 5의 카운트 갱신 트리거는 컬럼 GRANT를 우회해야 하므로 `security definer` + `set search_path = ''`로 만든다.
 - 물량 표기: `recipes.ratio` = 총 물량 ÷ 원두량, `recipe_steps.water_ratio` = 해당 단계까지 누적 물량 ÷ 원두량. 둘 다 numeric(6,3). 마지막 단계 water_ratio = ratio.
 - 아이스 변환은 저장하지 않고 화면에서 계산한다: `scaleRecipe(..., { iceShare })`. 총 물량(원두 × 비율)은 그대로, 그중 `iceShare`(기본 40%)를 얼음으로, 단계 물량은 같은 비율로 줄인다. 추출 모드(Phase 2)로 넘길 때 원두량·비율과 함께 핫/아이스도 넘긴다.
-- 드리퍼 용량: `drippers.size_label` + `max_dose_g`(대표 사이즈 기준 권장 최대 원두량, 시드에서 관리). 넘으면 계산기에서 안내만 하고 막지 않는다 (`exceedsCapacity`).
+- 드리퍼 용량: `drippers.size_label` + `max_dose_g`(대표 사이즈 기준 권장 최대 원두량, 시드에서 관리). 넘으면 추출 준비 화면에서 안내만 하고 막지 않는다 (`exceedsCapacity`).
 - 공식 레시피: `is_official = true`, `author_id = null`, 항상 public. 시드 id는 `00000000-0000-4000-8000-0000000000NN`로 고정. 유명 레시피는 수치만 쓰고 `source_name`(·`source_url`)으로 출처를 표기하고 `source_note`(≤200자)에 원작자 소개를 1~2줄 쓴다. 설명·소개는 직접 작성.
 - 시드는 `supabase/seed.sql` → `pnpm db:reset`으로 다시 넣는다.
 
@@ -101,7 +101,7 @@ e2e/                Playwright 테스트
 - `src/features/brew/store.ts`의 `createBrewStore(clock)`는 위 함수에 `now`만 넣어 주는 얇은 래퍼다. 화면마다 인스턴스를 만들고(전역 싱글턴 아님), 매 프레임 `completeIfDue(endMs)`로 종료를 판정한다.
 
 ### 추출 화면 (Phase 2-B에서 정함)
-- 원두량·비율·핫/아이스는 쿼리스트링(`?dose=&ratio=&iced=1`)으로 상세 ↔ 추출 화면을 오간다. 파싱·생성은 `features/brew/settings.ts`만 쓴다 (레시피 값과 같으면 생략, 범위 밖이면 레시피 값).
+- 원두량·비율·핫/아이스는 쿼리스트링(`?dose=&ratio=&iced=1`)에 둔다. 추출 준비 화면이 `history.replaceState`로 바로 고치고(`useLocationSearch`), 상세 ↔ 추출 링크가 그대로 넘긴다. 파싱·생성은 `features/brew/settings.ts`만 쓴다 (레시피 값과 같으면 생략, 범위 밖이면 레시피 값).
 - 알림 판단은 순수 함수 `lib/brew/cues.ts` (3·2·1초 틱, 단계 전환, 완료). 소리·진동·Wake Lock 같은 브라우저 API는 `features/brew/feedback.ts`, `hooks.ts`에만 둔다.
 - 화면 갱신은 rAF로 하되 리렌더는 ~10fps로 묶는다 (배터리). 알림·종료 판정은 매 프레임.
 - Web Audio는 시작/재개 탭 안에서 `unlock()`해야 iOS에서 소리가 난다. iOS Safari는 진동 미지원이라 소리만.
@@ -136,7 +136,7 @@ e2e/                Playwright 테스트
 - `water_g`는 컵 전체 물(아이스면 얼음 포함). 평점만 필수, 나머지는 선택 → 종료 화면 "기록 남기기" → 별점 → 저장 3탭.
 - 추출 → 기록은 `features/log/prefill.ts`의 `newLogHref`/`logDefaultsFromQuery`로 쿼리스트링을 주고받는다. 폼이 /me 아래라 비로그인은 로그인(→ 첫 설정) 후 같은 URL로 돌아온다.
 - 날짜는 `formatBrewedAt`으로 Asia/Seoul 고정 포맷 (서버 UTC와 브라우저가 같게).
-- 레시피 상세: 지난 "다음엔" 메모는 계산기 위(`LastAdjustmentNote`), 내 기록 3개는 맨 아래(`MyRecipeLogs`). 둘 다 세션을 읽어서 각각 Suspense.
+- 지난 "다음엔" 메모(`LastAdjustmentNote`)는 추출 준비 화면, 내 기록 3개(`MyRecipeLogs`)는 레시피 상세 맨 아래. 둘 다 세션을 읽어서 각각 Suspense.
 - 로그인·로그아웃·프로필 저장 액션은 `revalidatePath("/", "layout")`를 부른다. 레이아웃(헤더 아바타)은 이동해도 유지되므로 안 하면 새로고침 전까지 옛 상태가 보인다.
 
 ### 커뮤니티 (Phase 5에서 정함)
@@ -174,6 +174,12 @@ e2e/                Playwright 테스트
 - 설치 배너: 추출 시작 2회 후 한 번만 (localStorage). Chrome은 `beforeinstallprompt`를 잡아 두었다가 "설치" 버튼, iOS는 "공유 → 홈 화면에 추가" 안내.
 - E2E: `e2e/pwa.spec.ts`는 Playwright `pwa` 프로젝트가 `pnpm build && pnpm start --port 3100`에서 돌린다 (`context.setOffline`). 이미 띄워 둔 서버를 쓰려면 `PLAYWRIGHT_PWA_URL`. 오프라인 테스트처럼 예상된 콘솔 에러는 `test.use({ allowConsoleError: /…/ })` (배열은 Playwright가 튜플로 읽어서 RegExp 하나).
 - 레시피 사진(`/_next/image?url=/images/…`)은 별도 캐시(120개) cache-first. 페이지를 미리 받을 때 사진마다 한 폭(640 이상 중 가장 작은 것)만 받고, 오프라인에서는 같은 사진의 캐시된 아무 폭이나 준다 (`extractImagePaths`·`imageFallback`).
+
+### 추출 준비·링 타이머 (추출 준비 화면 작업에서 정함)
+- 비율 계산기는 레시피 상세가 아니라 추출 화면의 준비 단계(idle, `BrewPrep`)에 있다. 상세는 레시피 그대로(원두·비율·물 칩 + 단계)와 "추출하기" 링크만.
+- 준비 화면은 "추출 시작" 버튼으로만 시작한다 (설정 컨트롤이 있어 화면 전체 탭은 시작 후에만: 일시정지/계속). 시작 후에는 설정을 못 바꾼다. "다시 내리기"는 준비 화면으로 돌아간다.
+- 추출 중 화면은 링(`BrewRing`): 총 시간을 단계별 호로 나눈다(`brewSegments`, 순수 함수). 가운데는 목표 g, 다음 붓기 3초 전부터 링 머리가 깜박이고 카운트다운이 커진다.
+- Next가 떠난 추출 화면을 숨긴 채 살려 두므로, 레시피로 돌아가는 링크는 세션을 reset한다 (안 하면 다시 들어왔을 때 이전 추출이 이어진다).
 
 ### 홈·레시피 사진 (refactor/home-layout에서 정함)
 - 홈 = 위쪽(세션) + 인기·신규(공개, 캐시). 위쪽은 비로그인이면 히어로, 로그인이면 인사 + "지난번에 내린 레시피"(`getLastBrew`) + 저장/좋아요 탭. 각각 Suspense.

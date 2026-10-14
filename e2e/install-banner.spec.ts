@@ -12,13 +12,13 @@ const banner = (page: import("@playwright/test").Page) => page.getByRole("region
 
 test("the install hint shows once, after brew mode is used twice", async ({ page }) => {
   await page.goto(brewUrl);
-  await page.getByRole("button", { name: "시작" }).click();
+  await page.getByRole("button", { name: "추출 시작" }).click();
   await page.goto("/recipes");
   await expect(page.getByTestId("recipe-list")).toBeVisible();
   await expect(banner(page)).toHaveCount(0); // one brew is not enough
 
   await page.goto(brewUrl);
-  await page.getByRole("button", { name: "시작" }).click();
+  await page.getByRole("button", { name: "추출 시작" }).click();
   await page.goto("/recipes");
   await expect(banner(page)).toContainText("홈 화면에 추가");
   await banner(page).getByRole("button", { name: "닫기" }).click();

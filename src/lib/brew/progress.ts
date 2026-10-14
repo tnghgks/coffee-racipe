@@ -56,3 +56,31 @@ export function getBrewProgress<S extends TimedStep>(
     isComplete: elapsed >= endS,
   };
 }
+
+export type BrewSegment = {
+  /** Index of the step this segment belongs to; -1 for the wait before a first step that starts late. */
+  index: number;
+  /** 0–1 positions on the whole brew (start → end). */
+  from: number;
+  to: number;
+};
+
+/**
+ * The brew split into one segment per step (step start → next step start, last one → end), as
+ * fractions of the whole brew. Zero-length segments (steps sharing a start time) are left out.
+ */
+export function brewSegments(steps: readonly TimedStep[], totalTimeS: number): BrewSegment[] {
+  const endS = brewEndS(steps, totalTimeS);
+  if (endS <= 0) return [];
+  const at = (s: number) => Math.min(1, Math.max(0, s / endS));
+
+  const segments: BrewSegment[] = [];
+  const firstStart = steps[0]?.startAtS ?? endS;
+  if (firstStart > 0) segments.push({ index: -1, from: 0, to: at(firstStart) });
+  steps.forEach((step, i) => {
+    const from = at(step.startAtS);
+    const to = at(steps[i + 1]?.startAtS ?? endS);
+    if (to > from) segments.push({ index: i, from, to });
+  });
+  return segments;
+}
